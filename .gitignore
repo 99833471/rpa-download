@@ -1,0 +1,20 @@
+# Ambiente virtual (NUNCA versionar — pesado e específico da máquina)
+.venv/
+venv/
+env/
+
+# Cache Python / build
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+*.spec
+
+# Dados da aplicação e saídas de runtime
+.rpa/
+saida_robo/
+runs/
+
+# Configurações locais do Claude Code (específicas da máquina)
+.claude/settings.local.json

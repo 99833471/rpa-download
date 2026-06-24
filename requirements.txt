@@ -1,0 +1,10 @@
+# --- Fase 1 (Fundação) ---
+PySide6>=6.6
+
+# --- Fase 2 (Motor de gravação) ---
+playwright>=1.40      # automação web + gravador (rodar: playwright install chromium)
+holidays>=0.40        # calendário de feriados nacionais BR (função WORKDAY)
+# Obs.: a criptografia de sessão usa a DPAPI do Windows via ctypes (sem dependência).
+
+# --- Fase 5 (Exportação .exe) ---
+pyinstaller>=6.0      # gera o .exe do robô (runner leve; navegador baixado no 1º uso)

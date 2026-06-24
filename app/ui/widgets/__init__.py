@@ -1,0 +1,1 @@
+"""Widgets reutilizáveis do dashboard."""
