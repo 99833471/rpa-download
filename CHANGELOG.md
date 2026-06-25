@@ -4,6 +4,17 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.4.2] - 2026-06-25
+
+### Alterado (aparência / dimensionamento)
+
+- **Nome do robô aparece completo**: a célula do ícone agora ajusta a altura para
+  **quebrar o texto em várias linhas**; nomes muito longos limitam-se a algumas
+  linhas e o **tooltip** mostra o nome inteiro. As células ficam alinhadas (altura
+  uniforme pela maior).
+- Ícones e células de robô redimensionados para melhor legibilidade.
+- Título e descrição dos blocos passam a **quebrar em linhas** (não cortam mais).
+
 ## [1.4.1] - 2026-06-25
 
 ### Corrigido (robô não baixava o arquivo)

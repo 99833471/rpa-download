@@ -4,4 +4,4 @@ Fase 1 (Fundação): espelhamento de pastas, banco SQLite, fila de retry e dashb
 PySide6 com temas Light (Ambev) / Dark (AB InBev).
 """
 
-__version__ = "1.4.1"
+__version__ = "1.4.2"

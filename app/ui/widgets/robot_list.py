@@ -15,6 +15,8 @@ from ..theme import GRID_SIZES, ICON_SIZES, make_robot_icon
 from .constants import BLOCK_MIME
 
 ROBOT_ID_ROLE = Qt.UserRole + 1
+NAT_H_ROLE = Qt.UserRole + 2  # altura natural do item (antes de uniformizar)
+_MAX_LABEL_LINES = 6
 
 
 class RobotList(QListWidget):
@@ -55,23 +57,47 @@ class RobotList(QListWidget):
         self.setDragDropMode(QAbstractItemView.DragDrop)
         self.setDefaultDropAction(Qt.MoveAction)
 
-        self._apply_grid("large")
+        # Sem gridSize fixo: cada item dimensiona a própria altura (ver add_robot),
+        # para o nome completo aparecer quebrando em linhas.
+        self.setIconSize(QSize(ICON_SIZES["small"], ICON_SIZES["small"]))
 
-    def _apply_grid(self, size_key: str) -> None:
-        gw, gh = GRID_SIZES.get(size_key, GRID_SIZES["large"])
-        self.setGridSize(QSize(gw, gh))
-        self.setIconSize(QSize(ICON_SIZES.get(size_key, 84), ICON_SIZES.get(size_key, 84)))
+    def _ensure_icon_size(self, size_key: str) -> None:
+        want = ICON_SIZES.get(size_key, ICON_SIZES["small"])
+        if want > self.iconSize().width():
+            self.setIconSize(QSize(want, want))
 
     # ------------------------------------------------------------- popular
     def add_robot(self, robot) -> None:
+        self._ensure_icon_size(robot.size)
         item = QListWidgetItem(make_robot_icon(robot.name, robot.size, self.theme_name), robot.name)
         item.setData(ROBOT_ID_ROLE, robot.id)
-        item.setToolTip(robot.description or robot.name)
+        tip = f"{robot.name}\n\n{robot.description}" if robot.description else robot.name
+        item.setToolTip(tip)
         item.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        # Ajusta a grade ao maior ícone presente (mantém alinhamento agradável).
-        if robot.size == "large":
-            self._apply_grid("large")
+
+        # Altura da célula calculada para caber o NOME COMPLETO (quebrado em
+        # linhas). Nomes muito longos limitam-se a algumas linhas + tooltip.
+        cell_w = GRID_SIZES["large"][0]
+        fm = self.fontMetrics()
+        flags = int(Qt.TextWordWrap) | int(Qt.AlignHCenter)
+        rect = fm.boundingRect(0, 0, cell_w - 14, 10000, flags, robot.name)
+        text_h = min(rect.height(), fm.lineSpacing() * _MAX_LABEL_LINES)
+        nat_h = self.iconSize().height() + 12 + text_h + 10
+        item.setData(NAT_H_ROLE, nat_h)
+        item.setSizeHint(QSize(cell_w, nat_h))
         self.addItem(item)
+        self._normalize_heights()
+
+    def _normalize_heights(self) -> None:
+        """Uniformiza a altura das células pela maior, mantendo as linhas alinhadas."""
+        n = self.count()
+        if not n:
+            return
+        height = max(int(self.item(i).data(NAT_H_ROLE) or self.item(i).sizeHint().height())
+                     for i in range(n))
+        width = GRID_SIZES["large"][0]
+        for i in range(n):
+            self.item(i).setSizeHint(QSize(width, height))
 
     def robot_ids_in_order(self) -> list[int]:
         return [self.item(i).data(ROBOT_ID_ROLE) for i in range(self.count())]

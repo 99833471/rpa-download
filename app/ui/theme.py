@@ -130,7 +130,7 @@ def build_qss(name: str) -> str:
     QListWidget::item {{
         color: {p['text']};
         border-radius: 8px;
-        padding: 4px;
+        padding: 6px 2px;
     }}
     QListWidget::item:selected {{ background-color: {p['hover']}; color: {p['text']}; }}
     QListWidget::item:hover {{ background-color: {p['hover']}; }}
@@ -169,9 +169,10 @@ def build_qss(name: str) -> str:
     """
 
 
-# Tamanhos dos ícones de robô (px do desenho).
-ICON_SIZES = {"large": 84, "small": 52}
-GRID_SIZES = {"large": (110, 116), "small": (78, 86)}
+# Tamanhos dos ícones de robô (px do desenho) e largura/altura-base da célula.
+# A altura real de cada célula é calculada para caber o nome completo (RobotList).
+ICON_SIZES = {"large": 72, "small": 48}
+GRID_SIZES = {"large": (150, 132), "small": (108, 104)}
 
 
 def make_robot_icon(name: str, size_key: str, theme_name: str) -> QIcon:
