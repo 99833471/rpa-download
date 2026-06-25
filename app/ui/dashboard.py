@@ -562,11 +562,14 @@ class Dashboard(QWidget):
             return
         if not dialogs.confirm(
             self, "Refazer caminho",
-            f"Regravar o robô “{robot.name}” do zero?\n"
+            f"Regravar o robô “{robot.name}” do zero?\n\n"
+            "A sessão/cookies anteriores serão descartados — você fará o login "
+            "novamente durante a gravação.\n"
             "A automação anterior só será substituída se você concluir e salvar.",
         ):
             return
-        self.recorder.record(robot_id, reuse_session=True)
+        # reuse_session=False: navegador inicia limpo (sem cookies) → refaz o login.
+        self.recorder.record(robot_id, reuse_session=False)
 
     def generate_robot_exe(self, robot_id: int) -> None:
         self.exporter.export(robot_id)

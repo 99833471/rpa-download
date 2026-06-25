@@ -4,6 +4,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.2.1] - 2026-06-25
+
+### Corrigido
+
+- **Painel de gravação** não é mais esticado/deformado pelo CSS do site: os
+  estilos críticos (tamanho/posição) são aplicados com `!important` e reforçados
+  periodicamente, mantendo o painel pequeno no canto inferior direito.
+- **"Refazer caminho"** agora **descarta a sessão/cookies anteriores** daquele
+  robô — o login (e similares) é refeito durante a nova gravação.
+
 ## [1.2.0] - 2026-06-25
 
 ### Adicionado

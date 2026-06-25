@@ -265,27 +265,55 @@
     list.scrollTop = list.scrollHeight;
   }
 
+  // Aplica os estilos críticos com !important (inline vence o CSS do site, mesmo
+  // se o site usar !important), para o painel não ser deformado/esticado.
+  function styleBar(bar) {
+    const imp = {
+      position: "fixed", right: "12px", bottom: "12px", top: "auto", left: "auto",
+      width: "300px", "min-width": "300px", "max-width": "300px",
+      height: "auto", "max-height": "46vh", margin: "0", padding: "8px 10px",
+      float: "none", transform: "none", inset: "auto", "box-sizing": "border-box",
+      "z-index": "2147483647", display: "flex", "flex-direction": "column", gap: "6px",
+      background: "#161619", color: "#F2E9CE", border: "1px solid #D4AF37",
+      "border-radius": "10px", "font-family": "Segoe UI,Arial,sans-serif",
+      "font-size": "12px", "box-shadow": "0 6px 20px rgba(0,0,0,.45)",
+    };
+    for (const k in imp) bar.style.setProperty(k, imp[k], "important");
+    // 'inset:auto' acima zera top/left; reaplica right/bottom depois dele.
+    bar.style.setProperty("right", "12px", "important");
+    bar.style.setProperty("bottom", "12px", "important");
+  }
+  function styleBtn(btn, primary) {
+    const css = {
+      "box-sizing": "border-box", width: "auto", "min-width": "0", margin: "0",
+      border: primary ? "none" : "1px solid #2C2C31", "border-radius": "7px",
+      padding: primary ? "5px 9px" : "5px 8px", "font-size": "11px",
+      "font-weight": primary ? "700" : "400", cursor: "pointer", "line-height": "normal",
+      background: primary ? "#D4AF37" : "transparent", color: primary ? "#161619" : "#F2E9CE",
+    };
+    for (const k in css) btn.style.setProperty(k, css[k], "important");
+  }
+
   // Painel compacto no canto inferior direito, com histórico de campos.
   function buildToolbar() {
-    if (!isTop || document.getElementById(TOOLBAR_ID)) return;
-    const bar = document.createElement("div");
+    if (!isTop) return;
+    let bar = document.getElementById(TOOLBAR_ID);
+    if (bar) {
+      styleBar(bar); // reassegura tamanho/posição caso o site tente deformar
+      return;
+    }
+    bar = document.createElement("div");
     bar.id = TOOLBAR_ID;
-    bar.style.cssText =
-      "position:fixed;right:12px;bottom:12px;z-index:2147483647;width:300px;" +
-      "background:#161619;color:#F2E9CE;border:1px solid #D4AF37;border-radius:10px;" +
-      "padding:8px 10px;font-family:Segoe UI,Arial,sans-serif;font-size:12px;" +
-      "box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:6px;";
+    styleBar(bar);
 
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:6px;";
+    header.style.cssText = "display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box;";
     const dot = document.createElement("span");
     dot.textContent = "● GRAVANDO";
-    dot.style.cssText = "color:#E06C6C;font-weight:700;font-size:11px;flex:1;";
+    dot.style.cssText = "color:#E06C6C;font-weight:700;font-size:11px;flex:1;white-space:nowrap;";
     const finish = document.createElement("button");
     finish.textContent = "✔ Concluir";
-    finish.style.cssText =
-      "background:#D4AF37;color:#161619;border:none;border-radius:7px;padding:5px 9px;" +
-      "font-weight:700;font-size:11px;cursor:pointer;";
+    styleBtn(finish, true);
     finish.onclick = () => {
       snapshotTouched();
       if (window.__rpa_control) window.__rpa_control("finish");
@@ -293,9 +321,7 @@
     const cancel = document.createElement("button");
     cancel.textContent = "✕";
     cancel.title = "Cancelar";
-    cancel.style.cssText =
-      "background:transparent;color:#F2E9CE;border:1px solid #2C2C31;border-radius:7px;" +
-      "padding:5px 8px;font-size:11px;cursor:pointer;";
+    styleBtn(cancel, false);
     cancel.onclick = () => {
       if (window.__rpa_control) window.__rpa_control("cancel");
     };
@@ -309,7 +335,10 @@
 
     const list = document.createElement("div");
     list.id = "__rpa_hist";
-    list.style.cssText = "max-height:30vh;overflow-y:auto;";
+    list.style.setProperty("max-height", "30vh", "important");
+    list.style.setProperty("overflow-y", "auto", "important");
+    list.style.setProperty("width", "100%", "important");
+    list.style.setProperty("box-sizing", "border-box", "important");
 
     bar.appendChild(header);
     bar.appendChild(hint);
