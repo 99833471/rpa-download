@@ -15,7 +15,9 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_NAME = "AUTOMATIZADOR DOWNLOAD DE DADOS"
-EXE = os.path.join(ROOT, "dist", APP_NAME, APP_NAME + ".exe")
+# Caminho do .exe: argumento opcional, senão o build em pasta (onedir).
+EXE = (sys.argv[1] if len(sys.argv) > 1
+       else os.path.join(ROOT, "dist", APP_NAME, APP_NAME + ".exe"))
 
 _failures = []
 

@@ -39,9 +39,12 @@ Voce NAO precisa instalar Python nem nada alem disto.
 """
 
 
-def build() -> int:
-    recorder_js = os.path.join(ROOT, "app", "recorder", "recorder.js")
-    args = [
+ONEFILE_DIST = os.path.join(DIST, "onefile")
+ONEFILE_EXE = os.path.join(ONEFILE_DIST, APP_NAME + ".exe")
+
+
+def _common_args(recorder_js):
+    return [
         sys.executable, "-m", "PyInstaller",
         "--noconfirm", "--windowed",
         "--name", APP_NAME,
@@ -49,13 +52,37 @@ def build() -> int:
         "--collect-submodules", "app",
         "--collect-all", "holidays",
         "--add-data", f"{recorder_js}{os.pathsep}app/recorder",
+    ]
+
+
+def build() -> int:
+    """Build em modo PASTA (onedir) — abre rápido; distribuído como .zip."""
+    recorder_js = os.path.join(ROOT, "app", "recorder", "recorder.js")
+    args = _common_args(recorder_js) + [
         "--distpath", DIST,
         "--workpath", os.path.join(ROOT, "build", "work"),
         "--specpath", os.path.join(ROOT, "build"),
         os.path.join(ROOT, "main.py"),
     ]
-    print("Executando PyInstaller…")
+    print("PyInstaller (modo pasta)…")
     return subprocess.run(args, cwd=ROOT).returncode
+
+
+def build_onefile() -> int:
+    """Build em ARQUIVO ÚNICO (onefile) — um só .exe pronto para uso."""
+    recorder_js = os.path.join(ROOT, "app", "recorder", "recorder.js")
+    args = _common_args(recorder_js) + [
+        "--onefile",
+        "--distpath", ONEFILE_DIST,
+        "--workpath", os.path.join(ROOT, "build", "work_onefile"),
+        "--specpath", os.path.join(ROOT, "build", "onefile"),
+        os.path.join(ROOT, "main.py"),
+    ]
+    print("PyInstaller (arquivo único)…")
+    rc = subprocess.run(args, cwd=ROOT).returncode
+    if rc == 0:
+        print("EXE único:", ONEFILE_EXE)
+    return rc
 
 
 def package() -> int:
@@ -84,12 +111,21 @@ def package() -> int:
 
 
 def main() -> int:
-    if "--repack" not in sys.argv:
-        rc = build()
-        if rc != 0:
-            print("PyInstaller falhou.")
-            return rc
-    return package()
+    if "--repack" in sys.argv:
+        return package()
+    if "--onefile-only" in sys.argv:
+        return build_onefile()
+    rc = build()
+    if rc != 0:
+        print("PyInstaller falhou (modo pasta).")
+        return rc
+    rc = package()
+    if rc != 0:
+        return rc
+    rc = build_onefile()
+    if rc != 0:
+        print("PyInstaller falhou (arquivo único).")
+    return rc
 
 
 if __name__ == "__main__":

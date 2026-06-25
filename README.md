@@ -11,17 +11,19 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 
 ## ⬇️ Usar o programa pronto (sem instalar Python)
 
-Quem só quer **usar** recebe a pasta do programa compactada
-(**`AUTOMATIZADOR_DOWNLOAD_DE_DADOS.zip`**), compartilhada internamente
-(OneDrive / rede / e-mail):
+Quem só quer **usar** não precisa de Python. Há duas formas (compartilhadas
+internamente — OneDrive / rede / e-mail):
 
-1. **Extraia a pasta** para um local fixo (ex.: `C:\AUTOMATIZADOR`).
-2. Abra **`AUTOMATIZADOR DOWNLOAD DE DADOS.exe`**.
+- **`AUTOMATIZADOR_DOWNLOAD_DE_DADOS.exe`** — arquivo **único, pronto para uso**:
+  basta dar duplo-clique. (Abre um pouco mais devagar na 1ª vez de cada execução,
+  pois se descompacta sozinho.)
+- **`AUTOMATIZADOR_DOWNLOAD_DE_DADOS.zip`** — versão em pasta: **extraia** e abra o
+  `AUTOMATIZADOR DOWNLOAD DE DADOS.exe` de dentro dela. Abre mais rápido.
 
 Na primeira vez que um robô rodar, o navegador (Chromium) é baixado
-automaticamente (precisa de internet uma vez). Não é preciso instalar Python.
+automaticamente (precisa de internet uma vez).
 
-**Atualizar:** substitua a pasta pela versão mais recente do `.zip`.
+**Atualizar:** substitua o `.exe`/pasta pela versão mais recente.
 
 > O repositório é **privado**. Colaboradores com acesso podem baixar o `.zip` em
 > [Releases](https://github.com/99833471/rpa-download/releases/latest); para

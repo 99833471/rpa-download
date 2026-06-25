@@ -4,6 +4,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-06-25
+
+### Adicionado
+
+- **Executável único (`.exe` onefile)** pronto para uso no release — basta baixar
+  e abrir, sem extrair `.zip`. O `.zip` (modo pasta, abertura mais rápida)
+  continua disponível como alternativa.
+- `tools/build_app.py` agora também gera o `.exe` único (`build_onefile`).
+
 ## [1.1.0] - 2026-06-25
 
 ### Adicionado
