@@ -18,7 +18,11 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_NAME = "AUTOMATIZADOR DOWNLOAD DE DADOS"
-DIST = os.path.join(ROOT, "dist")
+
+# Saída do build. Pode ser redirecionada para FORA do OneDrive (que costuma
+# travar arquivos durante o build) via as variáveis RPA_DIST / RPA_WORK.
+DIST = os.environ.get("RPA_DIST", os.path.join(ROOT, "dist"))
+BUILD = os.environ.get("RPA_WORK", os.path.join(ROOT, "build"))
 APP_DIR = os.path.join(DIST, APP_NAME)
 
 _LEIAME = """AUTOMATIZADOR DOWNLOAD DE DADOS
@@ -60,8 +64,8 @@ def build() -> int:
     recorder_js = os.path.join(ROOT, "app", "recorder", "recorder.js")
     args = _common_args(recorder_js) + [
         "--distpath", DIST,
-        "--workpath", os.path.join(ROOT, "build", "work"),
-        "--specpath", os.path.join(ROOT, "build"),
+        "--workpath", os.path.join(BUILD, "work"),
+        "--specpath", BUILD,
         os.path.join(ROOT, "main.py"),
     ]
     print("PyInstaller (modo pasta)…")
@@ -74,8 +78,8 @@ def build_onefile() -> int:
     args = _common_args(recorder_js) + [
         "--onefile",
         "--distpath", ONEFILE_DIST,
-        "--workpath", os.path.join(ROOT, "build", "work_onefile"),
-        "--specpath", os.path.join(ROOT, "build", "onefile"),
+        "--workpath", os.path.join(BUILD, "work_onefile"),
+        "--specpath", os.path.join(BUILD, "onefile"),
         os.path.join(ROOT, "main.py"),
     ]
     print("PyInstaller (arquivo único)…")

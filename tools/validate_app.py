@@ -77,7 +77,8 @@ def test_gui_boot(work):
     env["RPA_CONFIG_DIR"] = cfg_dir
     proc = subprocess.Popen([EXE], env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(9)
+    # onefile descomprime a cada início; dá mais tempo quando necessário.
+    time.sleep(int(os.environ.get("RPA_BOOT_WAIT", "12")))
     alive = proc.poll() is None
     check("a GUI iniciou e seguiu rodando (não crashou)", alive)
     check("criou o banco em data_root/.rpa", os.path.isfile(os.path.join(data_root, ".rpa", "app.db")))
@@ -87,6 +88,7 @@ def test_gui_boot(work):
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             proc.kill()
+        time.sleep(1.5)  # dá tempo de liberar o handle do banco (WAL)
 
 
 def main():
@@ -94,7 +96,7 @@ def main():
         print("EXE não encontrado:", EXE)
         return 1
     print("EXE:", EXE)
-    with tempfile.TemporaryDirectory() as work:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as work:
         test_executor_dispatch(work)
         test_gui_boot(work)
     print()
