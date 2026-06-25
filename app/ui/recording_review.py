@@ -46,11 +46,11 @@ _TYPE_ITEMS = [("Fixo", FIELD_FIXED), ("Fórmula", FIELD_FORMULA), ("Manual (per
 
 
 class RecordingReviewDialog(QDialog):
-    def __init__(self, summary: dict, robot_name: str, parent=None):
+    def __init__(self, summary: dict, robot_name: str, parent=None, title=None):
         super().__init__(parent)
         self.summary = summary
         self.raw_steps = summary.get("steps", [])
-        self.setWindowTitle(f"Revisar gravação — {robot_name}")
+        self.setWindowTitle(title or f"Revisar gravação — {robot_name}")
         self.resize(940, 640)
 
         root = QVBoxLayout(self)
@@ -97,7 +97,22 @@ class RecordingReviewDialog(QDialog):
                 combo = QComboBox()
                 for label, value in _TYPE_ITEMS:
                     combo.addItem(label, value)
-                edit = QLineEdit(step.get("value", ""))
+                # Pré-seleciona tipo/valor de um campo já existente (Redefinir campos).
+                existing = step.get("field") or None
+                init_text = step.get("value", "")
+                if existing:
+                    etype = existing.get("type", FIELD_FIXED)
+                    for k in range(combo.count()):
+                        if combo.itemData(k) == etype:
+                            combo.setCurrentIndex(k)
+                            break
+                    if etype == FIELD_FORMULA:
+                        init_text = existing.get("formula", "")
+                    elif etype == FIELD_MANUAL:
+                        init_text = existing.get("prompt", "")
+                    else:
+                        init_text = existing.get("value", init_text)
+                edit = QLineEdit(init_text)
                 combo.currentIndexChanged.connect(
                     lambda _idx, c=combo, e=edit, s=step: self._on_type_changed(c, e, s)
                 )
@@ -154,6 +169,21 @@ class RecordingReviewDialog(QDialog):
                 w.setEnabled(on)
         _toggle(False)
         self.limit_check.toggled.connect(_toggle)
+
+        # Pré-preenche os limites de um robô existente (Redefinir campos).
+        sl = self.summary.get("site_limit") or {}
+        if sl.get("enabled"):
+            self.limit_check.setChecked(True)
+            self.max_rows.setValue(int(sl.get("max_rows") or 500))
+            si = self.strategy.findData(sl.get("strategy", "date_partition"))
+            if si >= 0:
+                self.strategy.setCurrentIndex(si)
+            sd = self.start_step.findData(sl.get("start_date_step", -1))
+            if sd >= 0:
+                self.start_step.setCurrentIndex(sd)
+            ed = self.end_step.findData(sl.get("end_date_step", -1))
+            if ed >= 0:
+                self.end_step.setCurrentIndex(ed)
         return group
 
     # ---------------------------------------------------------------- saída

@@ -98,6 +98,9 @@ class ExecutionEngine:
         # = site recusou por limite, hora de dividir).
         self.partition_download_timeout = partition_download_timeout
         self._partition_downloads: list = []
+        # Resultado passo a passo (para o log .csv) e o período atual (particionamento).
+        self.step_results: list = []
+        self._current_period = ""
 
     # ------------------------------------------------------------- entrada
     def execute(self) -> RunResult:
@@ -115,6 +118,7 @@ class ExecutionEngine:
         i = 0
         while i < len(steps):
             step = steps[i]
+            rec_index = i
             nxt = steps[i + 1] if i + 1 < len(steps) else None
             self.log(f"Passo {i}: {step.action} {step.label or step.url or ''}".strip())
             try:
@@ -135,11 +139,26 @@ class ExecutionEngine:
                 elif step.action == "download":
                     self.log("  (marcador de download sem clique associado — ignorado)")
             except ExecutionError as e:
-                self.log(f"ERRO no passo {i}: {e}")
+                self._record(rec_index, step, "erro", str(e), overrides)
+                self.log(f"ERRO no passo {rec_index}: {e}")
                 return RunResult(False, str(e), downloads)
+            self._record(rec_index, step, "ok", "", overrides)
             i += 1
         self.log(f"Concluído. {len(downloads)} arquivo(s) baixado(s).")
         return RunResult(True, "", downloads)
+
+    def _record(self, index, step, status, error="", overrides=None):
+        self.step_results.append({
+            "data_hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "periodo": self._current_period,
+            "passo": index,
+            "acao": step.action,
+            "campo": step.label or step.url or "",
+            "seletor": step.selectors[0].value if step.selectors else "",
+            "valor": self._value_for(step, overrides, index) if step.field else step.value,
+            "status": status,
+            "erro": error,
+        })
 
     @staticmethod
     def _value_for(step, overrides, i):
@@ -185,14 +204,17 @@ class ExecutionEngine:
             lim.start_date_step: formula.format_date(a, fmt),
             lim.end_date_step: formula.format_date(b, fmt),
         }
-        self.log(f"  testando período {formula.format_date(a, fmt)} a {formula.format_date(b, fmt)}")
+        period = f"{formula.format_date(a, fmt)} a {formula.format_date(b, fmt)}"
+        self.log(f"  testando período {period}")
         # Falha rápida para detectar o limite (sem retries longos de download).
         prev_to, prev_att = self.download_timeout, self.max_attempts
         self.download_timeout, self.max_attempts = self.partition_download_timeout, 1
+        self._current_period = period
         try:
             res = self.run(overrides=overrides)
         finally:
             self.download_timeout, self.max_attempts = prev_to, prev_att
+            self._current_period = ""
         if res.ok and res.downloads:
             self._partition_downloads.extend(res.downloads)
             return True
@@ -247,9 +269,19 @@ class ExecutionEngine:
         self._over_selectors(step, lambda l: l.first.click(timeout=self.action_timeout), "clique")
 
     def _fill(self, step, value):
-        self._over_selectors(
-            step, lambda l: l.first.fill(value, timeout=self.action_timeout), "preencher"
-        )
+        def do(loc):
+            try:
+                loc.first.fill(value, timeout=self.action_timeout)
+            except (PWError, PWTimeout):
+                # Fallback p/ campos readonly ou preenchidos via JS (date pickers):
+                # define o valor e dispara os eventos input/change.
+                loc.first.evaluate(
+                    "(el, v) => { el.value = v;"
+                    " el.dispatchEvent(new Event('input', {bubbles: true}));"
+                    " el.dispatchEvent(new Event('change', {bubbles: true})); }",
+                    value,
+                )
+        self._over_selectors(step, do, "preencher")
 
     def _select(self, step, value):
         def do(l):

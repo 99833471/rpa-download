@@ -4,6 +4,27 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.2.0] - 2026-06-25
+
+### Adicionado
+
+- **Log detalhado em CSV por execução** (`runs/run_<data>.csv`): uma linha por
+  passo com data/hora, período, ação, campo, seletor, valor, **status** e **erro** —
+  para analisar exatamente onde falhou. (separador `;`, abre no Excel BR)
+- **"Redefinir campos"** no menu do robô (botão direito): altera **valor e tipo**
+  (Fixo/Fórmula/Manual) dos campos capturados **sem regravar** o caminho.
+- **Painel de gravação compacto** no canto inferior direito, mostrando em tempo
+  real o **histórico de campos reconhecidos e valores**.
+
+### Alterado / Corrigido
+
+- O gravador agora reconhece **seletores de data e campos preenchidos via
+  JavaScript** (captura por foco + saída do campo + snapshot ao concluir); antes
+  esses campos podiam não ser reconhecidos.
+- Todos os campos tocados viram campos editáveis (padrão **Fixo** = repete o valor).
+- O navegador de gravação abre **maximizado e sem a margem cinza** (no_viewport).
+- A execução tenta **digitar a data no campo** (fallback para campos readonly/JS).
+
 ## [1.1.1] - 2026-06-25
 
 ### Adicionado

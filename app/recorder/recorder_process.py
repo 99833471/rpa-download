@@ -57,8 +57,10 @@ def main(argv=None) -> int:
     ensure_chromium()  # baixa o navegador no 1º uso, se necessário
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=args.headless)
-        ctx_kwargs = {"accept_downloads": True}
+        browser = pw.chromium.launch(headless=args.headless, args=["--start-maximized"])
+        # no_viewport: o site ocupa a janela inteira (sem a margem cinza do
+        # viewport fixo padrão do Playwright).
+        ctx_kwargs = {"accept_downloads": True, "no_viewport": True}
         if args.session_in and os.path.isfile(args.session_in):
             try:
                 ctx_kwargs["storage_state"] = json.loads(

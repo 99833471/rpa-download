@@ -15,6 +15,7 @@ Códigos de saída: 0 = sucesso, 2 = cancelado, 3 = erro.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import sys
@@ -96,10 +97,10 @@ def _run_headless(pw, manifest, start_url, download_dir, session_path, log):
         except Exception:
             pass
         if has_visible_password(page):
-            return "needs_login", []
+            return "needs_login", [], []
         engine = ExecutionEngine(page, manifest, download_dir, log=log)
         res = engine.execute()
-        return ("ok" if res.ok else "error"), res.downloads
+        return ("ok" if res.ok else "error"), res.downloads, engine.step_results
     finally:
         browser.close()
 
@@ -160,16 +161,18 @@ def main(argv=None) -> int:
     rc = EXIT_ERROR
     downloads = []
     error = ""
+    results = []
     try:
         ensure_chromium(log)  # baixa o navegador no 1º uso, se necessário
         with sync_playwright() as pw:
-            status, downloads = _run_headless(pw, manifest, start_url,
-                                              args.download_dir, session_path, log)
+            status, downloads, results = _run_headless(pw, manifest, start_url,
+                                                       args.download_dir, session_path, log)
             if status == "needs_login":
                 _emit({"type": "login_required"})
                 if _manual_login(pw, start_url, session_path, log):
-                    status, downloads = _run_headless(pw, manifest, start_url,
-                                                      args.download_dir, session_path, log)
+                    status, downloads, r2 = _run_headless(pw, manifest, start_url,
+                                                          args.download_dir, session_path, log)
+                    results = results + r2
                 else:
                     status = "cancel"
 
@@ -187,9 +190,26 @@ def main(argv=None) -> int:
     finally:
         if logf:
             logf.close()
+        _write_csv(args.log, results)
 
     _emit({"type": "done", "ok": rc == EXIT_OK, "downloads": downloads, "error": error})
     return rc
+
+
+def _write_csv(log_path, rows):
+    """Grava o log detalhado por passo em .csv (separador ';' p/ Excel BR)."""
+    if not log_path:
+        return
+    csv_path = (log_path[:-4] + ".csv") if log_path.lower().endswith(".log") else log_path + ".csv"
+    cols = ["data_hora", "periodo", "passo", "acao", "campo", "seletor", "valor", "status", "erro"]
+    try:
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=cols, delimiter=";", extrasaction="ignore")
+            writer.writeheader()
+            for r in rows:
+                writer.writerow(r)
+    except OSError:
+        pass
 
 
 if __name__ == "__main__":

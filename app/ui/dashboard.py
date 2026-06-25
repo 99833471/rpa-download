@@ -167,6 +167,7 @@ class ScreenPage(QWidget):
         rl.renameRequested.connect(d.rename_robot)
         rl.describeRequested.connect(d.describe_robot)
         rl.redoPathRequested.connect(d.redo_robot_path)
+        rl.redefineFieldsRequested.connect(d.redefine_robot_fields)
         rl.deleteRequested.connect(d.delete_robot)
         rl.moveToRequested.connect(d.move_robot_dialog)
         rl.toggleSizeRequested.connect(d.toggle_robot_size)
@@ -569,6 +570,44 @@ class Dashboard(QWidget):
 
     def generate_robot_exe(self, robot_id: int) -> None:
         self.exporter.export(robot_id)
+
+    def redefine_robot_fields(self, robot_id: int) -> None:
+        import os
+
+        from PySide6.QtWidgets import QDialog
+
+        from ..robot_manifest import RobotManifest
+        from .recording_review import RecordingReviewDialog
+
+        robot = self.db.get_robot(robot_id)
+        if robot is None:
+            return
+        path = os.path.join(self.mirror.robot_dir(robot_id), "robot.json")
+        if not os.path.isfile(path):
+            dialogs.info(
+                self, "Robô sem caminho",
+                "Este robô ainda não foi gravado. Use “Refazer caminho” primeiro.",
+            )
+            return
+        try:
+            manifest = RobotManifest.load(path)
+        except (OSError, ValueError):
+            dialogs.info(self, "Robô inválido", "Não foi possível ler o robot.json.")
+            return
+        if not any(s.field for s in manifest.steps):
+            dialogs.info(self, "Sem campos", "Este robô não tem campos de preenchimento para redefinir.")
+            return
+
+        dlg = RecordingReviewDialog(
+            manifest.to_dict(), robot.name, self,
+            title=f"Redefinir campos — {robot.name}",
+        )
+        if dlg.exec() == QDialog.Accepted:
+            new_manifest = dlg.build_manifest(robot.name, session_file=manifest.session_file)
+            new_manifest.created_at = manifest.created_at
+            new_manifest.save(path)
+            self._status(f"Campos do robô “{robot.name}” atualizados.")
+            dialogs.info(self, "Campos atualizados", "Os campos do robô foram salvos.")
 
     def _on_recording_finished(self, robot_id: int, saved: bool) -> None:
         robot = self.db.get_robot(robot_id)

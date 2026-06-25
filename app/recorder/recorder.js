@@ -150,6 +150,43 @@
     } catch (e) {}
   }
   const FIELD_TAGS = new Set(["input", "textarea", "select"]);
+  const SKIP_INPUT_TYPES = new Set(["button", "submit", "reset", "image", "file", "password"]);
+  const lastValue = new WeakMap(); // dedupe de valor por elemento
+  const touched = new Set();       // campos que receberam foco (snapshot ao concluir)
+
+  // Captura o valor atual de um campo (com dedupe) e registra no histórico.
+  function captureField(el) {
+    if (!el || inToolbar(el)) return;
+    const tag = el.tagName ? el.tagName.toLowerCase() : "";
+    if (!FIELD_TAGS.has(tag)) return;
+    const type = (el.getAttribute("type") || "").toLowerCase();
+    if (SKIP_INPUT_TYPES.has(type)) return;
+    let value = el.value;
+    if (type === "checkbox" || type === "radio") value = el.checked ? "true" : "false";
+    if (value == null) value = "";
+    if (tag !== "select" && value === "") return; // ignora campo vazio
+    if (lastValue.get(el) === value) return; // já capturado com este valor
+    lastValue.set(el, value);
+    const label = labelFor(el);
+    send({
+      action: tag === "select" ? "select" : "fill",
+      selectors: candidates(el),
+      tag: tag,
+      label: label,
+      value: value,
+    });
+    addHistory(label, value);
+  }
+
+  // Snapshot final: garante a captura de TODO campo que foi tocado, mesmo os que
+  // não disparam 'change' (date pickers, campos preenchidos via JavaScript).
+  function snapshotTouched() {
+    touched.forEach((el) => {
+      try {
+        captureField(el);
+      } catch (e) {}
+    });
+  }
 
   // ------------------------------------------------------------- listeners
   document.addEventListener(
@@ -158,43 +195,32 @@
       const el = ev.target;
       if (!el || inToolbar(el)) return;
       const tag = el.tagName ? el.tagName.toLowerCase() : "";
-      // Cliques em campos de texto viram foco; o valor é capturado no 'change'.
+      // Cliques em campos de texto viram foco; o valor é capturado depois.
       if (FIELD_TAGS.has(tag) && tag !== "select") {
         const t = (el.getAttribute("type") || "").toLowerCase();
         if (!["button", "submit", "checkbox", "radio", "reset"].includes(t)) return;
       }
-      send({
-        action: "click",
-        selectors: candidates(el),
-        tag: tag,
-        label: labelFor(el),
-      });
+      send({ action: "click", selectors: candidates(el), tag: tag, label: labelFor(el) });
     },
     true
   );
 
+  // Marca campos que receberam foco (para o snapshot ao concluir).
   document.addEventListener(
-    "change",
+    "focusin",
     (ev) => {
       const el = ev.target;
-      if (!el || inToolbar(el)) return;
-      const tag = el.tagName ? el.tagName.toLowerCase() : "";
-      if (!FIELD_TAGS.has(tag)) return;
-      const type = (el.getAttribute("type") || "").toLowerCase();
-      // Segurança: nunca grava o valor de campos de senha (a sessão cobre o login).
-      if (type === "password") return;
-      let value = el.value;
-      if (type === "checkbox" || type === "radio") value = el.checked ? "true" : "false";
-      send({
-        action: tag === "select" ? "select" : "fill",
-        selectors: candidates(el),
-        tag: tag,
-        label: labelFor(el),
-        value: value,
-      });
+      if (el && !inToolbar(el) && FIELD_TAGS.has((el.tagName || "").toLowerCase())) {
+        touched.add(el);
+      }
     },
     true
   );
+
+  // Captura no 'change' e também ao SAIR do campo (pega date pickers e campos
+  // preenchidos via JavaScript que não disparam 'change').
+  document.addEventListener("change", (ev) => captureField(ev.target), true);
+  document.addEventListener("focusout", (ev) => captureField(ev.target), true);
 
   document.addEventListener(
     "keydown",
@@ -204,44 +230,92 @@
       if (!el || inToolbar(el)) return;
       const tag = el.tagName ? el.tagName.toLowerCase() : "";
       if (tag !== "input") return;
+      captureField(el); // grava o valor digitado antes do Enter
       send({ action: "press", selectors: candidates(el), tag: tag, label: labelFor(el), value: "Enter" });
     },
     true
   );
 
   // --------------------------------------------------------------- overlay
+  const HIST = []; // {label, value} — preservado entre recriações da barra
+
+  function addHistory(label, value) {
+    HIST.push({ label: label || "(campo)", value: value });
+    renderHistory();
+  }
+  function renderHistory() {
+    const list = document.getElementById("__rpa_hist");
+    if (!list) return;
+    list.innerHTML = "";
+    HIST.forEach((it) => {
+      const row = document.createElement("div");
+      row.style.cssText = "padding:3px 0;border-top:1px solid #2C2C31;";
+      const l = document.createElement("div");
+      l.textContent = it.label;
+      l.style.cssText =
+        "color:#D4AF37;font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+      const v = document.createElement("div");
+      v.textContent = it.value;
+      v.style.cssText =
+        "color:#F2E9CE;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+      row.appendChild(l);
+      row.appendChild(v);
+      list.appendChild(row);
+    });
+    list.scrollTop = list.scrollHeight;
+  }
+
+  // Painel compacto no canto inferior direito, com histórico de campos.
   function buildToolbar() {
     if (!isTop || document.getElementById(TOOLBAR_ID)) return;
     const bar = document.createElement("div");
     bar.id = TOOLBAR_ID;
     bar.style.cssText =
-      "position:fixed;top:12px;right:12px;z-index:2147483647;background:#161619;" +
-      "color:#F2E9CE;border:1px solid #D4AF37;border-radius:10px;padding:8px 10px;" +
-      "font-family:Segoe UI,Arial,sans-serif;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.4);" +
-      "display:flex;align-items:center;gap:8px;";
+      "position:fixed;right:12px;bottom:12px;z-index:2147483647;width:300px;" +
+      "background:#161619;color:#F2E9CE;border:1px solid #D4AF37;border-radius:10px;" +
+      "padding:8px 10px;font-family:Segoe UI,Arial,sans-serif;font-size:12px;" +
+      "box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:6px;";
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;gap:6px;";
     const dot = document.createElement("span");
     dot.textContent = "● GRAVANDO";
-    dot.style.cssText = "color:#E06C6C;font-weight:700;";
+    dot.style.cssText = "color:#E06C6C;font-weight:700;font-size:11px;flex:1;";
     const finish = document.createElement("button");
     finish.textContent = "✔ Concluir";
     finish.style.cssText =
-      "background:#D4AF37;color:#161619;border:none;border-radius:8px;padding:6px 12px;" +
-      "font-weight:700;cursor:pointer;";
+      "background:#D4AF37;color:#161619;border:none;border-radius:7px;padding:5px 9px;" +
+      "font-weight:700;font-size:11px;cursor:pointer;";
     finish.onclick = () => {
+      snapshotTouched();
       if (window.__rpa_control) window.__rpa_control("finish");
     };
     const cancel = document.createElement("button");
-    cancel.textContent = "✕ Cancelar";
+    cancel.textContent = "✕";
+    cancel.title = "Cancelar";
     cancel.style.cssText =
-      "background:transparent;color:#F2E9CE;border:1px solid #2C2C31;border-radius:8px;" +
-      "padding:6px 12px;cursor:pointer;";
+      "background:transparent;color:#F2E9CE;border:1px solid #2C2C31;border-radius:7px;" +
+      "padding:5px 8px;font-size:11px;cursor:pointer;";
     cancel.onclick = () => {
       if (window.__rpa_control) window.__rpa_control("cancel");
     };
-    bar.appendChild(dot);
-    bar.appendChild(finish);
-    bar.appendChild(cancel);
+    header.appendChild(dot);
+    header.appendChild(finish);
+    header.appendChild(cancel);
+
+    const hint = document.createElement("div");
+    hint.textContent = "Campos reconhecidos:";
+    hint.style.cssText = "color:#9C9684;font-size:10px;text-transform:uppercase;letter-spacing:.5px;";
+
+    const list = document.createElement("div");
+    list.id = "__rpa_hist";
+    list.style.cssText = "max-height:30vh;overflow-y:auto;";
+
+    bar.appendChild(header);
+    bar.appendChild(hint);
+    bar.appendChild(list);
     (document.body || document.documentElement).appendChild(bar);
+    renderHistory();
   }
 
   if (isTop) {

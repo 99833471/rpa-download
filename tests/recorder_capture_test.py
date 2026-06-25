@@ -26,6 +26,7 @@ _HTML = """<!doctype html><html><head><meta charset="utf-8"><title>Teste</title>
   <h1>Relatório</h1>
   <label for="campo-data">Data inicial</label>
   <input id="campo-data" name="data" placeholder="Data inicial">
+  <input id="campo-data2" name="data2" readonly placeholder="Data fim (calendário)">
   <select id="sel-tipo" name="tipo">
     <option value="a">Opção A</option>
     <option value="b">Opção B</option>
@@ -77,6 +78,14 @@ def main():
             page.locator("#campo-data").blur()
             page.wait_for_timeout(100)
 
+            # Simula um SELETOR DE DATA (calendário): campo readonly cujo valor é
+            # definido via JavaScript, SEM disparar 'change'. Deve ser capturado
+            # no 'focusout' (item: date picker não reconhecido).
+            page.focus("#campo-data2")
+            page.eval_on_selector("#campo-data2", "el => { el.value = '15/06/2026'; }")
+            page.locator("#campo-data2").blur()
+            page.wait_for_timeout(100)
+
             # Seleciona opção.
             page.select_option("#sel-tipo", "b")
             page.wait_for_timeout(100)
@@ -97,10 +106,17 @@ def main():
     selects = [e for e in events if e["action"] == "select"]
     clicks = [e for e in events if e["action"] == "click"]
 
-    check("capturou 1 preenchimento (sem a senha)", len(fills) == 1)
+    check("capturou 2 preenchimentos (data + date picker, sem a senha)", len(fills) == 2)
     check("valor do preenchimento correto", fills and fills[0]["value"] == "01/06/2026")
     check("nenhuma senha vazou nos eventos",
           all("segredo123" not in (e.get("value") or "") for e in events))
+
+    # Date picker (readonly, sem 'change') capturado via focusout/snapshot.
+    dp = [e for e in fills if e["value"] == "15/06/2026"]
+    check("date picker (campo via JS) foi reconhecido", len(dp) == 1)
+    if dp:
+        check("date picker: seletor inclui #campo-data2",
+              any("#campo-data2" in v or 'name="data2"' in v for v in values(dp[0])))
 
     if fills:
         check("data: id é o 1º candidato", types(fills[0])[0] == "id"

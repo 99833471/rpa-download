@@ -59,8 +59,10 @@ def main():
 
         print("== Subprocesso executor ==")
         check("saiu com código 0", proc.returncode == 0)
-        files = [f for f in os.listdir(download_dir) if f != "run.log"]
+        # Ignora os logs (run.log/run.csv) — conta só o arquivo baixado.
+        files = [f for f in os.listdir(download_dir) if not f.startswith("run.")]
         check("um arquivo baixado", len(files) == 1)
+        check("log .csv detalhado gerado", os.path.isfile(os.path.join(download_dir, "run.csv")))
         if files:
             check("arquivo com timestamp", files[0].endswith(" - relatorio.csv"))
             check("arquivo não vazio", os.path.getsize(os.path.join(download_dir, files[0])) > 0)
