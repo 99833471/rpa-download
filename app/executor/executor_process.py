@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from playwright.sync_api import sync_playwright  # noqa: E402
 
 from app.executor.browser import ensure_chromium  # noqa: E402
-from app.executor.executor_core import ExecutionEngine, has_visible_password  # noqa: E402
+from app.executor.executor_core import ExecutionEngine, is_login_page  # noqa: E402
 from app.robot_manifest import RobotManifest  # noqa: E402
 from app.services import crypto  # noqa: E402
 
@@ -96,7 +96,7 @@ def _run_headless(pw, manifest, start_url, download_dir, session_path, log):
             page.goto(start_url, wait_until="domcontentloaded", timeout=30000)
         except Exception:
             pass
-        if has_visible_password(page):
+        if is_login_page(page):
             return "needs_login", [], []
         engine = ExecutionEngine(page, manifest, download_dir, log=log)
         res = engine.execute()

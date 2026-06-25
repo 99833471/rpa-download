@@ -28,6 +28,7 @@ class RobotList(QListWidget):
     moveToRequested = Signal(int)
     toggleSizeRequested = Signal(int)
     generateExeRequested = Signal(int)
+    openFolderRequested = Signal(int)
 
     # Drag-and-drop:
     robotDroppedExternally = Signal(int, int)  # robot_id, target_block_id
@@ -90,6 +91,7 @@ class RobotList(QListWidget):
         menu.addAction("🛠  Redefinir campos", lambda: self.redefineFieldsRequested.emit(robot_id))
         menu.addAction("↔  Alternar tamanho do ícone", lambda: self.toggleSizeRequested.emit(robot_id))
         menu.addAction("➦  Mover para…", lambda: self.moveToRequested.emit(robot_id))
+        menu.addAction("📂  Abrir pasta de downloads", lambda: self.openFolderRequested.emit(robot_id))
         menu.addSeparator()
         menu.addAction("⤓  Gerar executável (.exe)", lambda: self.generateExeRequested.emit(robot_id))
         menu.addSeparator()

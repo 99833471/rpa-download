@@ -27,6 +27,28 @@ class FormulaError(Exception):
     """Erro de sintaxe ou avaliação de uma fórmula."""
 
 
+# Referência exibida ao usuário (nome, descrição, exemplo).
+FORMULAS = [
+    ("TODAY()", "Data de hoje.", "TODAY()"),
+    ("NOW()", "Data e hora atuais.", 'TEXT(NOW(); "dd/mm/yyyy hh:nn")'),
+    ("DATE(ano; mês; dia)", "Monta uma data específica.", "DATE(2026; 12; 31)"),
+    ("WORKDAY(data; dias)", "Soma/subtrai dias ÚTEIS (pula fins de semana e feriados nacionais BR).",
+     "WORKDAY(TODAY(); -1)"),
+    ("EOMONTH(data; meses)", "Último dia do mês, com deslocamento de meses.", "EOMONTH(TODAY(); 0)"),
+    ("EDATE(data; meses)", "Mesma data N meses depois (+) ou antes (-).", "EDATE(TODAY(); -1)"),
+    ("YEAR(data)", "Ano (número) de uma data.", "YEAR(TODAY())"),
+    ("MONTH(data)", "Mês (número) de uma data.", "MONTH(TODAY())"),
+    ("DAY(data)", "Dia (número) de uma data.", "DAY(TODAY())"),
+    ("TEXT(valor; formato)", "Formata data/número como texto (dd, mm, yyyy, hh, nn, ss).",
+     'TEXT(TODAY(); "yyyy-mm-dd")'),
+    ("data + N  /  data - N", "Soma/subtrai N dias de uma data.", "TODAY()+2   |   TODAY()-1"),
+]
+
+# Nomes para o autocomplete (com o parêntese de abertura).
+FORMULA_NAMES = ["TODAY()", "NOW()", "DATE(", "WORKDAY(", "EOMONTH(", "EDATE(",
+                 "YEAR(", "MONTH(", "DAY(", "TEXT("]
+
+
 # --------------------------------------------------------------------- tokens
 _TOKEN_PUNCT = {"(", ")", ";", "+", "-", "*", "/"}
 

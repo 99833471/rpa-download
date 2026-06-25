@@ -4,6 +4,29 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.4.0] - 2026-06-25
+
+### Adicionado
+
+- **Lista de fórmulas** (botão "ƒ Fórmulas disponíveis") com descrição e exemplo.
+- **Autocomplete de fórmulas** ao digitar no campo de fórmula.
+- **Tipos de dado nos campos Manual**: ao marcar um campo como Manual, define-se o
+  **nome** e o **tipo** (texto, inteiro, decimal, data, data/hora, sim/não, lista).
+  No preenchimento, cada tipo abre o **widget adequado** (calendário para datas,
+  número com dica "0", lista suspensa, etc.).
+- Menu do robô (botão direito): **"Abrir pasta de downloads"**.
+
+### Corrigido / Alterado (login SSO — análise dos logs)
+
+- O robô **não automatiza mais o login**: páginas de login (Microsoft/SSO) não são
+  gravadas nem repetidas na execução — o login é tratado por **sessão + fallback
+  manual**.
+- **Detecção de login ampliada**: por URL de SSO e por **campo de e-mail** (não só
+  senha), corrigindo o Azure AD, que pede o e-mail primeiro.
+- A heurística de seletor não descarta mais ids estáveis curtos (ex.: `i0116`).
+
+> Recomendação: **regrave robôs de SSO uma vez** para o login sair dos passos.
+
 ## [1.3.0] - 2026-06-25
 
 ### Alterado

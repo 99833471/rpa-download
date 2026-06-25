@@ -18,6 +18,15 @@ FIELD_FIXED = "fixed"      # valor literal (ex.: 23/06/2026)
 FIELD_FORMULA = "formula"  # fórmula dinâmica (ex.: WORKDAY(TODAY(); -1))
 FIELD_MANUAL = "manual"    # solicitar informação a cada execução
 
+# Tipos de dado (campos Manual) — definem o widget no preenchimento.
+DT_TEXT = "text"
+DT_INT = "int"
+DT_DECIMAL = "decimal"
+DT_DATE = "date"
+DT_DATETIME = "datetime"
+DT_BOOL = "bool"
+DT_CHOICE = "choice"
+
 # Ações de passo.
 ACTION_GOTO = "goto"
 ACTION_CLICK = "click"
@@ -44,6 +53,9 @@ class FieldConfig:
     formula: str = ""     # usado quando type == formula
     prompt: str = ""      # rótulo do pop-up quando type == manual
     fmt: str = "dd/mm/yyyy"  # formato de saída para datas
+    data_type: str = DT_TEXT     # tipo de dado (campos manual): define o widget
+    name: str = ""               # nome do campo (rótulo amigável)
+    options: list = field(default_factory=list)  # opções (data_type == choice)
 
     @classmethod
     def from_dict(cls, d):
@@ -55,6 +67,9 @@ class FieldConfig:
             formula=d.get("formula", ""),
             prompt=d.get("prompt", ""),
             fmt=d.get("fmt", "dd/mm/yyyy"),
+            data_type=d.get("data_type", DT_TEXT),
+            name=d.get("name", ""),
+            options=list(d.get("options", []) or []),
         )
 
 

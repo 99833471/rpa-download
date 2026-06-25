@@ -24,6 +24,7 @@ from playwright.sync_api import Error as PWError
 from playwright.sync_api import TimeoutError as PWTimeout
 
 from .. import formula
+from ..login_detect import is_auth_url
 from ..robot_manifest import RobotManifest
 from .partition import partition_plan
 
@@ -82,6 +83,30 @@ def has_visible_password(page) -> bool:
     return False
 
 
+def is_login_page(page) -> bool:
+    """True se a página atual é de login (URL de SSO, ou campo de e-mail/senha).
+
+    Cobre o Azure AD, que mostra o E-MAIL primeiro (sem senha) — por isso não
+    basta procurar campo de senha.
+    """
+    try:
+        if is_auth_url(page.url or ""):
+            return True
+    except Exception:
+        pass
+    if has_visible_password(page):
+        return True
+    try:
+        loc = page.locator("input[type='email'], #i0116, input[name='loginfmt']")
+        n = loc.count()
+        for i in range(min(n, 5)):
+            if loc.nth(i).is_visible():
+                return True
+    except PWError:
+        pass
+    return False
+
+
 class ExecutionEngine:
     def __init__(self, page, manifest: RobotManifest, download_dir: str,
                  log=None, *, action_timeout=8000, download_timeout=30000,
@@ -119,6 +144,13 @@ class ExecutionEngine:
         while i < len(steps):
             step = steps[i]
             rec_index = i
+            # Passos em página de login são ignorados (login é tratado pela sessão
+            # e pelo fallback de login manual).
+            if step.action != "goto" and self._on_auth_page():
+                self.log(f"Passo {i}: pulado (página de login — tratada pela sessão)")
+                self._record(rec_index, step, "pulado", "página de login")
+                i += 1
+                continue
             nxt = steps[i + 1] if i + 1 < len(steps) else None
             self.log(f"Passo {i}: {step.action} {step.label or step.url or ''}".strip())
             try:
@@ -165,6 +197,12 @@ class ExecutionEngine:
         if overrides and i in overrides:
             return overrides[i]
         return step.field.value if step.field else step.value
+
+    def _on_auth_page(self) -> bool:
+        try:
+            return is_auth_url(self.page.url or "")
+        except Exception:
+            return False
 
     # ------------------------------------------------------- particionamento
     def _valid_date_steps(self, lim) -> bool:

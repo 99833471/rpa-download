@@ -15,7 +15,7 @@ import tempfile
 from datetime import datetime
 
 from PySide6.QtCore import QObject, QProcess, Signal
-from PySide6.QtWidgets import QInputDialog, QMessageBox
+from PySide6.QtWidgets import QDialog, QMessageBox
 
 from .. import formula
 from ..robot_manifest import FIELD_FIXED, FIELD_FORMULA, FIELD_MANUAL, RobotManifest
@@ -109,7 +109,29 @@ class ExecutionController(QObject):
         except Exception:
             br = None
 
-        for step in manifest.steps:
+        # 1) Coleta todos os campos Manual e pergunta de uma vez, com o widget
+        #    adequado a cada tipo de dado.
+        manual_specs = []
+        for i, step in enumerate(manifest.steps):
+            if step.field and step.field.type == FIELD_MANUAL:
+                manual_specs.append({
+                    "index": i,
+                    "name": step.field.name or step.field.prompt or step.label,
+                    "prompt": step.field.prompt,
+                    "data_type": step.field.data_type,
+                    "fmt": step.field.fmt or "dd/mm/yyyy",
+                    "options": step.field.options,
+                })
+        manual_values = {}
+        if manual_specs:
+            from .manual_input import ManualInputDialog
+            dlg = ManualInputDialog(manual_specs, manifest.name, self.parent)
+            if dlg.exec() != QDialog.Accepted:
+                return None
+            manual_values = dlg.values()
+
+        # 2) Resolve cada campo para um valor fixo de execução.
+        for i, step in enumerate(manifest.steps):
             if step.field is None:
                 continue
             kind = step.field.type
@@ -123,13 +145,7 @@ class ExecutionController(QObject):
                                         f"{step.label or 'campo'}: {e}")
                     return None
             elif kind == FIELD_MANUAL:
-                text, ok = QInputDialog.getText(
-                    self.parent, "Informação necessária",
-                    step.field.prompt or step.label or "Informe o valor:",
-                )
-                if not ok:
-                    return None
-                value = text
+                value = manual_values.get(i, "")
             else:  # fixo
                 value = step.field.value
             step.field.value = value

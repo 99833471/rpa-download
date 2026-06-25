@@ -13,6 +13,8 @@ import os
 import sys
 import time
 
+from ..login_detect import is_auth_url
+
 # Navegações que ocorrem até este intervalo após uma ação são tratadas como
 # efeito de um clique já gravado (não viram passo 'goto' duplicado).
 _NAV_DEBOUNCE_S = 1.5
@@ -85,6 +87,9 @@ class RecordingSession:
         except Exception:
             return
         if not url or url == "about:blank":
+            return
+        # Páginas de login/SSO não viram passos (o login é tratado via sessão).
+        if is_auth_url(url):
             return
         # Ignora navegações que são consequência de um clique recém-gravado.
         if time.monotonic() - self._last_action < _NAV_DEBOUNCE_S:

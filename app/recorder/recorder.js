@@ -23,12 +23,33 @@
   }
   function looksAuto(id) {
     // Heurística para ignorar ids gerados automaticamente (instáveis).
+    // Obs.: tolera ids curtos com poucos dígitos (ex.: 'i0116' da Microsoft),
+    // pois guardamos vários candidatos e o executor tenta os de reserva.
     if (!id) return true;
     if (id.length > 40) return true;
-    if (/\d{4,}/.test(id)) return true;
+    if (/\d{6,}/.test(id)) return true;
     if (/[0-9a-f]{8}/i.test(id)) return true;
     if (/^(ember|react|ng-|mui-|radix-|:r)/i.test(id)) return true;
     return false;
+  }
+
+  // Páginas de login/SSO: NÃO gravamos ações nelas (o login vira sessão).
+  const AUTH_HOSTS = [
+    "login.microsoftonline.com", "login.microsoft.com", "login.live.com",
+    "login.windows.net", "msauth", "sts.", "adfs", ".okta.com", "okta.com",
+    "onelogin.com", "pingidentity", "auth0.com", "accounts.google.com",
+    "signin.aws", "fs.",
+  ];
+  const AUTH_PATHS = ["/saml2", "/saml", "/adfs/", "/oauth2/authorize", "/signin", "/sso", "/login"];
+  function onAuthPage() {
+    try {
+      const h = (location.hostname || "").toLowerCase();
+      const p = (location.pathname || "").toLowerCase();
+      if (AUTH_HOSTS.some((s) => h.indexOf(s) >= 0)) return true;
+      return AUTH_PATHS.some((s) => p.indexOf(s) >= 0);
+    } catch (e) {
+      return false;
+    }
   }
   function isUnique(sel) {
     try {
@@ -156,7 +177,7 @@
 
   // Captura o valor atual de um campo (com dedupe) e registra no histórico.
   function captureField(el) {
-    if (!el || inToolbar(el)) return;
+    if (!el || inToolbar(el) || onAuthPage()) return;
     const tag = el.tagName ? el.tagName.toLowerCase() : "";
     if (!FIELD_TAGS.has(tag)) return;
     const type = (el.getAttribute("type") || "").toLowerCase();
@@ -193,7 +214,7 @@
     "click",
     (ev) => {
       const el = ev.target;
-      if (!el || inToolbar(el)) return;
+      if (!el || inToolbar(el) || onAuthPage()) return;
       const tag = el.tagName ? el.tagName.toLowerCase() : "";
       // Cliques em campos de texto viram foco; o valor é capturado depois.
       if (FIELD_TAGS.has(tag) && tag !== "select") {
@@ -227,7 +248,7 @@
     (ev) => {
       if (ev.key !== "Enter") return;
       const el = ev.target;
-      if (!el || inToolbar(el)) return;
+      if (!el || inToolbar(el) || onAuthPage()) return;
       const tag = el.tagName ? el.tagName.toLowerCase() : "";
       if (tag !== "input") return;
       captureField(el); // grava o valor digitado antes do Enter

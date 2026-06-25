@@ -172,6 +172,7 @@ class ScreenPage(QWidget):
         rl.moveToRequested.connect(d.move_robot_dialog)
         rl.toggleSizeRequested.connect(d.toggle_robot_size)
         rl.generateExeRequested.connect(d.generate_robot_exe)
+        rl.openFolderRequested.connect(d.open_robot_folder)
         rl.robotDroppedExternally.connect(d.move_robot_to_block)
         rl.orderChanged.connect(d.reorder_robots)
 
@@ -573,6 +574,18 @@ class Dashboard(QWidget):
 
     def generate_robot_exe(self, robot_id: int) -> None:
         self.exporter.export(robot_id)
+
+    def open_robot_folder(self, robot_id: int) -> None:
+        import os
+
+        robot_dir = self.mirror.robot_dir(robot_id)
+        if not robot_dir:
+            return
+        os.makedirs(robot_dir, exist_ok=True)
+        try:
+            os.startfile(robot_dir)  # abre no Explorer (Windows)
+        except (OSError, AttributeError):
+            dialogs.info(self, "Abrir pasta", f"Pasta do robô:\n{robot_dir}")
 
     def redefine_robot_fields(self, robot_id: int) -> None:
         import os

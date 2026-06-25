@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from app.robot_manifest import FIELD_FORMULA  # noqa: E402
+from app.robot_manifest import DT_DATE, FIELD_FORMULA, FIELD_MANUAL  # noqa: E402
 
 _failures = []
 
@@ -47,7 +47,8 @@ def main():
     dlg = RecordingReviewDialog(summary, "Robô Custos")
 
     # Define o campo de data como Fórmula.
-    combo, edit = dlg._rows[1]
+    row = dlg._rows[1]
+    combo, edit = row["combo"], row["edit"]
     check("linha do fill tem combo de tipo", combo is not None)
     # Seleciona "Fórmula" pelo data.
     for i in range(combo.count()):
@@ -77,6 +78,19 @@ def main():
     check("passo da data inicial = 1", manifest.site_limit.start_date_step == 1)
     check("has_login propagado", manifest.has_login is True)
     check("session_file definido", manifest.session_file == "session.bin")
+
+    # Item 3: campo Manual com tipo de dado (data) e nome.
+    for i in range(combo.count()):
+        if combo.itemData(i) == FIELD_MANUAL:
+            combo.setCurrentIndex(i)
+            break
+    edit.setText("Data inicial")
+    row["cfg"] = {"name": "Data inicial", "data_type": DT_DATE, "fmt": "dd/mm/yyyy", "options": []}
+    m2 = dlg.build_manifest("Robô Custos")
+    f2 = m2.steps[1].field
+    check("campo manual com tipo de dado 'data'",
+          f2.type == FIELD_MANUAL and f2.data_type == DT_DATE)
+    check("nome do campo manual preservado", f2.name == "Data inicial")
 
     print()
     if _failures:

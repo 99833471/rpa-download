@@ -1,9 +1,9 @@
-"""Diálogo de revisão pós-gravação.
+"""Diálogo de revisão pós-gravação (também usado em "Redefinir campos").
 
-Mostra os passos capturados e permite, para cada campo de preenchimento, escolher
-o tipo (Fixo / Fórmula / Manual) e o valor/fórmula/rótulo. Também coleta o
-questionário de limites do site (máx. de linhas + estratégia + quais passos
-definem o intervalo de datas). Ao confirmar, monta o RobotManifest.
+Para cada campo de preenchimento permite escolher o tipo (Fixo / Fórmula /
+Manual) e o valor/fórmula. Para campos Manual, abre uma configuração de tipo de
+dado e nome (⚙). Também coleta o questionário de limites do site. Ao confirmar,
+monta o RobotManifest.
 """
 
 from __future__ import annotations
@@ -21,28 +21,29 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPushButton,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
 )
 
 from .. import formula
 from ..robot_manifest import (
-    FIELD_FIXED, FIELD_FORMULA, FIELD_MANUAL,
+    DT_TEXT, FIELD_FIXED, FIELD_FORMULA, FIELD_MANUAL,
     FieldConfig, RobotManifest, Selector, SiteLimit, Step,
 )
+from .field_config import FieldConfigDialog, data_type_label
+from .formula_help import FormulaHelpDialog, formula_completer
 
 _ACTION_LABELS = {
-    "goto": "Navegar",
-    "click": "Clicar",
-    "fill": "Preencher",
-    "select": "Selecionar",
-    "press": "Tecla",
-    "download": "Download",
+    "goto": "Navegar", "click": "Clicar", "fill": "Preencher",
+    "select": "Selecionar", "press": "Tecla", "download": "Download",
 }
 _FIELDABLE = {"fill", "select"}
-_TYPE_ITEMS = [("Fixo", FIELD_FIXED), ("Fórmula", FIELD_FORMULA), ("Manual (pergunta ao rodar)", FIELD_MANUAL)]
+_TYPE_ITEMS = [("Fixo", FIELD_FIXED), ("Fórmula", FIELD_FORMULA),
+               ("Manual (pergunta ao rodar)", FIELD_MANUAL)]
 
 
 class RecordingReviewDialog(QDialog):
@@ -51,28 +52,34 @@ class RecordingReviewDialog(QDialog):
         self.summary = summary
         self.raw_steps = summary.get("steps", [])
         self.setWindowTitle(title or f"Revisar gravação — {robot_name}")
-        self.resize(940, 640)
+        self.resize(1000, 650)
 
         root = QVBoxLayout(self)
 
+        header = QHBoxLayout()
         info = QLabel(
-            f"URL inicial: {summary.get('start_url') or '(definida na gravação)'}\n"
-            f"Login/sessão capturada: {'sim' if summary.get('has_login') else 'não'}\n"
-            f"Passos gravados: {len(self.raw_steps)}"
+            f"URL inicial: {summary.get('start_url') or '(definida na gravação)'}   |   "
+            f"Login/sessão: {'sim' if summary.get('has_login') else 'não'}   |   "
+            f"Passos: {len(self.raw_steps)}"
         )
         info.setObjectName("AppSubtitle")
-        root.addWidget(info)
+        header.addWidget(info)
+        header.addStretch(1)
+        help_btn = QPushButton("ƒ Fórmulas disponíveis")
+        help_btn.clicked.connect(lambda: FormulaHelpDialog(self).exec())
+        header.addWidget(help_btn)
+        root.addLayout(header)
 
-        self.table = QTableWidget(len(self.raw_steps), 5)
+        self.table = QTableWidget(len(self.raw_steps), 6)
         self.table.setHorizontalHeaderLabels(
-            ["#", "Ação", "Elemento", "Tipo do campo", "Valor / Fórmula / Pergunta"]
+            ["#", "Ação", "Elemento", "Tipo do campo", "Valor / Fórmula / Nome", "Config."]
         )
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         root.addWidget(self.table, 1)
 
-        self._rows = []  # (type_combo|None, value_edit|None)
+        self._rows = []  # dict por linha (ou None)
         self._fill_choices = [("(nenhum)", -1)]
         self._build_rows()
 
@@ -93,50 +100,88 @@ class RecordingReviewDialog(QDialog):
             self.table.setItem(i, 1, _ro_item(_ACTION_LABELS.get(action, action)))
             self.table.setItem(i, 2, _ro_item(step.get("label") or step.get("url") or ""))
 
-            if action in _FIELDABLE:
-                combo = QComboBox()
-                for label, value in _TYPE_ITEMS:
-                    combo.addItem(label, value)
-                # Pré-seleciona tipo/valor de um campo já existente (Redefinir campos).
-                existing = step.get("field") or None
-                init_text = step.get("value", "")
-                if existing:
-                    etype = existing.get("type", FIELD_FIXED)
-                    for k in range(combo.count()):
-                        if combo.itemData(k) == etype:
-                            combo.setCurrentIndex(k)
-                            break
-                    if etype == FIELD_FORMULA:
-                        init_text = existing.get("formula", "")
-                    elif etype == FIELD_MANUAL:
-                        init_text = existing.get("prompt", "")
-                    else:
-                        init_text = existing.get("value", init_text)
-                edit = QLineEdit(init_text)
-                combo.currentIndexChanged.connect(
-                    lambda _idx, c=combo, e=edit, s=step: self._on_type_changed(c, e, s)
-                )
-                self.table.setCellWidget(i, 3, combo)
-                self.table.setCellWidget(i, 4, edit)
-                self._rows.append((combo, edit))
-                self._fill_choices.append((f"#{i} — {step.get('label') or step.get('value') or action}", i))
-            else:
+            if action not in _FIELDABLE:
                 self.table.setItem(i, 3, _ro_item("—"))
                 self.table.setItem(i, 4, _ro_item(step.get("value", "")))
-                self._rows.append((None, None))
+                self.table.setItem(i, 5, _ro_item(""))
+                self._rows.append(None)
+                continue
 
-    def _on_type_changed(self, combo, edit, step):
-        kind = combo.currentData()
+            existing = step.get("field") or None
+            cfg = {"name": "", "data_type": DT_TEXT, "fmt": "dd/mm/yyyy", "options": []}
+            init_text = step.get("value", "")
+            etype = FIELD_FIXED
+            if existing:
+                etype = existing.get("type", FIELD_FIXED)
+                if etype == FIELD_FORMULA:
+                    init_text = existing.get("formula", "")
+                elif etype == FIELD_MANUAL:
+                    cfg = {
+                        "name": existing.get("name", "") or existing.get("prompt", ""),
+                        "data_type": existing.get("data_type", DT_TEXT),
+                        "fmt": existing.get("fmt", "dd/mm/yyyy"),
+                        "options": list(existing.get("options", []) or []),
+                    }
+                    init_text = cfg["name"]
+                else:
+                    init_text = existing.get("value", init_text)
+
+            combo = QComboBox()
+            for label, value in _TYPE_ITEMS:
+                combo.addItem(label, value)
+            ci = combo.findData(etype)
+            if ci >= 0:
+                combo.setCurrentIndex(ci)
+
+            edit = QLineEdit(init_text)
+            cfg_btn = QToolButton()
+            cfg_btn.setText("⚙")
+            cfg_btn.setToolTip("Configurar tipo de dado e nome do campo")
+
+            row = {"combo": combo, "edit": edit, "cfg": cfg, "cfg_btn": cfg_btn, "step": step}
+            cfg_btn.clicked.connect(lambda _c=False, r=row: self._configure(r))
+            combo.currentIndexChanged.connect(lambda _idx, r=row: self._on_type_changed(r))
+
+            self.table.setCellWidget(i, 3, combo)
+            self.table.setCellWidget(i, 4, edit)
+            self.table.setCellWidget(i, 5, cfg_btn)
+            self._rows.append(row)
+            self._fill_choices.append(
+                (f"#{i} — {step.get('label') or step.get('value') or action}", i))
+            self._apply_type_ui(row)
+
+    def _on_type_changed(self, row):
+        # Ao trocar p/ Manual, herda um nome inicial do rótulo do elemento.
+        if row["combo"].currentData() == FIELD_MANUAL and not row["edit"].text().strip():
+            row["edit"].setText(row["step"].get("label", "") or "")
+        self._apply_type_ui(row)
+
+    def _apply_type_ui(self, row):
+        kind = row["combo"].currentData()
+        edit, cfg_btn = row["edit"], row["cfg_btn"]
+        edit.setCompleter(None)
         if kind == FIELD_FIXED:
             edit.setPlaceholderText("Valor fixo (ex.: 23/06/2026)")
-            if not edit.text():
-                edit.setText(step.get("value", ""))
+            cfg_btn.setEnabled(False)
         elif kind == FIELD_FORMULA:
             edit.setPlaceholderText("Fórmula (ex.: WORKDAY(TODAY(); -1))")
+            edit.setCompleter(formula_completer(edit))
+            cfg_btn.setEnabled(False)
         else:  # manual
-            edit.setPlaceholderText("Texto da pergunta (ex.: Informe a data inicial)")
-            if not edit.text():
-                edit.setText(step.get("label", "") or "Informe o valor")
+            edit.setPlaceholderText("Nome do campo (ex.: Data inicial)")
+            cfg_btn.setEnabled(True)
+            cfg_btn.setToolTip(f"Tipo: {data_type_label(row['cfg']['data_type'])} — clique p/ configurar")
+
+    def _configure(self, row):
+        seed = dict(row["cfg"])
+        if row["edit"].text().strip():
+            seed["name"] = row["edit"].text().strip()
+        dlg = FieldConfigDialog(seed, self)
+        if dlg.exec() == QDialog.Accepted:
+            row["cfg"] = dlg.result_config()
+            if row["cfg"]["name"]:
+                row["edit"].setText(row["cfg"]["name"])
+            self._apply_type_ui(row)
 
     def _build_limits_group(self) -> QGroupBox:
         group = QGroupBox("Limites do site")
@@ -163,14 +208,12 @@ class RecordingReviewDialog(QDialog):
         form.addRow("Campo da data inicial:", self.start_step)
         form.addRow("Campo da data final:", self.end_step)
 
-        # Habilita/desabilita conforme o checkbox.
         def _toggle(on):
             for w in (self.max_rows, self.strategy, self.start_step, self.end_step):
                 w.setEnabled(on)
         _toggle(False)
         self.limit_check.toggled.connect(_toggle)
 
-        # Pré-preenche os limites de um robô existente (Redefinir campos).
         sl = self.summary.get("site_limit") or {}
         if sl.get("enabled"):
             self.limit_check.setChecked(True)
@@ -188,10 +231,9 @@ class RecordingReviewDialog(QDialog):
 
     # ---------------------------------------------------------------- saída
     def _on_accept(self):
-        # Valida as fórmulas antes de aceitar.
-        for i, (combo, edit) in enumerate(self._rows):
-            if combo is not None and combo.currentData() == FIELD_FORMULA:
-                ok, msg = formula.validate(edit.text())
+        for i, row in enumerate(self._rows):
+            if row and row["combo"].currentData() == FIELD_FORMULA:
+                ok, msg = formula.validate(row["edit"].text())
                 if not ok:
                     QMessageBox.warning(
                         self, "Fórmula inválida",
@@ -206,16 +248,23 @@ class RecordingReviewDialog(QDialog):
             selectors = [Selector(type=s.get("type", "css"), value=s.get("value", ""))
                          for s in raw.get("selectors", [])]
             field = None
-            combo, edit = self._rows[i]
-            if combo is not None:
-                kind = combo.currentData()
-                text = edit.text().strip()
+            row = self._rows[i]
+            if row is not None:
+                kind = row["combo"].currentData()
+                text = row["edit"].text().strip()
                 if kind == FIELD_FIXED:
                     field = FieldConfig(type=FIELD_FIXED, value=text)
                 elif kind == FIELD_FORMULA:
                     field = FieldConfig(type=FIELD_FORMULA, formula=text)
                 else:
-                    field = FieldConfig(type=FIELD_MANUAL, prompt=text or "Informe o valor")
+                    cfg = row["cfg"]
+                    nm = text or cfg.get("name") or raw.get("label") or "Informe o valor"
+                    field = FieldConfig(
+                        type=FIELD_MANUAL, prompt=nm, name=nm,
+                        data_type=cfg.get("data_type", DT_TEXT),
+                        fmt=cfg.get("fmt", "dd/mm/yyyy"),
+                        options=list(cfg.get("options", []) or []),
+                    )
             steps.append(Step(
                 action=raw.get("action", ""),
                 selectors=selectors,
