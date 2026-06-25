@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.4.1] - 2026-06-25
+
+### Corrigido (robô não baixava o arquivo)
+
+- O executor agora **escuta downloads globalmente** e salva **qualquer arquivo
+  baixado** durante a execução (com timestamp + checagem de integridade), **sem
+  depender de um "marcador"** após o clique. Aguarda relatórios que demoram a
+  gerar no servidor.
+- Cliques em **ícones/imagens/spans dentro de um botão ou link** agora capturam o
+  **elemento clicável** (o botão), gerando seletores estáveis (ex.: `#btn-x` em vez
+  de `#btn-x > img`) — corrige o clique de download que falhava por timeout.
+
+> Para aproveitar a captura estável do botão, **regrave o robô** que estava
+> falhando.
+
 ## [1.4.0] - 2026-06-25
 
 ### Adicionado

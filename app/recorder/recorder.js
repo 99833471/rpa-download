@@ -162,6 +162,25 @@
     return out;
   }
 
+  // Sobe até o elemento realmente clicável (botão/link), p/ não gravar o <img>
+  // ou <span> interno — que gera seletor frágil e nem sempre é clicável.
+  function clickable(el) {
+    let cur = el;
+    for (let d = 0; d < 4 && cur && cur.nodeType === 1; d++) {
+      const t = cur.tagName ? cur.tagName.toLowerCase() : "";
+      if (t === "button" || t === "a") return cur;
+      const role = cur.getAttribute && cur.getAttribute("role");
+      if (role === "button" || role === "link" || role === "tab" || role === "menuitem") return cur;
+      if (cur.hasAttribute && cur.hasAttribute("onclick")) return cur;
+      if (t === "input") {
+        const it = (cur.getAttribute("type") || "").toLowerCase();
+        if (["button", "submit", "reset"].includes(it)) return cur;
+      }
+      cur = cur.parentElement;
+    }
+    return el;
+  }
+
   function inToolbar(el) {
     return !!(el && el.closest && el.closest("#" + TOOLBAR_ID));
   }
@@ -221,7 +240,14 @@
         const t = (el.getAttribute("type") || "").toLowerCase();
         if (!["button", "submit", "checkbox", "radio", "reset"].includes(t)) return;
       }
-      send({ action: "click", selectors: candidates(el), tag: tag, label: labelFor(el) });
+      // Captura o elemento clicável (botão/link), não o ícone/span interno.
+      const target = clickable(el);
+      send({
+        action: "click",
+        selectors: candidates(target),
+        tag: target.tagName ? target.tagName.toLowerCase() : tag,
+        label: labelFor(target),
+      });
     },
     true
   );

@@ -126,6 +126,13 @@ class ExecutionEngine:
         # Resultado passo a passo (para o log .csv) e o período atual (particionamento).
         self.step_results: list = []
         self._current_period = ""
+        # Escuta global de downloads: qualquer arquivo baixado durante a execução
+        # é salvo, sem depender de um "marcador" após o clique.
+        self._downloads_captured: list = []
+        try:
+            self.page.context.on("download", self._collect_download)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------- entrada
     def execute(self) -> RunResult:
@@ -138,6 +145,7 @@ class ExecutionEngine:
     # ----------------------------------------------------------------- run
     def run(self, overrides: dict | None = None) -> RunResult:
         os.makedirs(self.download_dir, exist_ok=True)
+        self._downloads_captured = []
         downloads = []
         steps = self.manifest.steps
         i = 0
@@ -151,17 +159,12 @@ class ExecutionEngine:
                 self._record(rec_index, step, "pulado", "página de login")
                 i += 1
                 continue
-            nxt = steps[i + 1] if i + 1 < len(steps) else None
             self.log(f"Passo {i}: {step.action} {step.label or step.url or ''}".strip())
             try:
                 if step.action == "goto":
                     self._goto(step)
                 elif step.action == "click":
-                    if nxt is not None and nxt.action == "download":
-                        downloads.append(self._click_download(step))
-                        i += 1  # consome o marcador de download
-                    else:
-                        self._click(step)
+                    self._click(step)
                 elif step.action == "fill":
                     self._fill(step, self._value_for(step, overrides, i))
                 elif step.action == "select":
@@ -169,15 +172,57 @@ class ExecutionEngine:
                 elif step.action == "press":
                     self._press(step)
                 elif step.action == "download":
-                    self.log("  (marcador de download sem clique associado — ignorado)")
+                    pass  # marcador antigo: download é capturado globalmente
             except ExecutionError as e:
                 self._record(rec_index, step, "erro", str(e), overrides)
                 self.log(f"ERRO no passo {rec_index}: {e}")
                 return RunResult(False, str(e), downloads)
             self._record(rec_index, step, "ok", "", overrides)
             i += 1
+
+        downloads.extend(self._collect_and_save_downloads())
         self.log(f"Concluído. {len(downloads)} arquivo(s) baixado(s).")
         return RunResult(True, "", downloads)
+
+    def _collect_download(self, download):
+        self._downloads_captured.append(download)
+
+    def _collect_and_save_downloads(self) -> list:
+        """Aguarda o(s) download(s) gerar(em) e salva com timestamp + integridade.
+
+        Espera o tempo cheio (relatórios server-side demoram) apenas quando o robô
+        tem um download esperado; caso contrário, espera só um instante para não
+        atrasar robôs que não baixam nada.
+        """
+        expects = any(s.action == "download" for s in self.manifest.steps)
+        cap = (self.download_timeout / 1000.0) if expects else 3.0
+        deadline = time.monotonic() + cap
+        while not self._downloads_captured and time.monotonic() < deadline:
+            try:
+                self.page.wait_for_timeout(250)
+            except (PWError, PWTimeout):
+                break
+        if self._downloads_captured:
+            # respiro para eventuais downloads simultâneos
+            try:
+                self.page.wait_for_timeout(800)
+            except (PWError, PWTimeout):
+                pass
+        saved = []
+        for dl in self._downloads_captured:
+            try:
+                name = timestamp_filename(dl.suggested_filename or "download")
+                dest = os.path.join(self.download_dir, name)
+                dl.save_as(dest)
+                if os.path.exists(dest) and os.path.getsize(dest) > 0:
+                    saved.append(dest)
+                    self.log(f"  download salvo: {name}")
+                else:
+                    self.log("  download vazio/corrompido — ignorado")
+            except Exception as e:  # noqa: BLE001
+                self.log(f"  falha ao salvar download: {e}")
+        self._downloads_captured = []
+        return saved
 
     def _record(self, index, step, status, error="", overrides=None):
         self.step_results.append({
@@ -334,25 +379,6 @@ class ExecutionEngine:
         self._over_selectors(
             step, lambda l: l.first.press(key, timeout=self.action_timeout), "tecla"
         )
-
-    def _click_download(self, step) -> str:
-        def do(l):
-            with self.page.expect_download(timeout=self.download_timeout) as info:
-                l.first.click(timeout=self.action_timeout)
-            dl = info.value
-            name = timestamp_filename(dl.suggested_filename or "download")
-            dest = os.path.join(self.download_dir, name)
-            dl.save_as(dest)
-            # Validação de integridade.
-            if not os.path.exists(dest) or os.path.getsize(dest) == 0:
-                try:
-                    os.remove(dest)
-                except OSError:
-                    pass
-                raise PWError("arquivo baixado vazio/corrompido")
-            self.log(f"  download salvo: {name}")
-            return dest
-        return self._over_selectors(step, do, "download")
 
     def _evade_popups(self) -> bool:
         # Tenta botões por texto (role=button e links).

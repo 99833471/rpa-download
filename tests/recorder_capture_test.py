@@ -33,6 +33,7 @@ _HTML = """<!doctype html><html><head><meta charset="utf-8"><title>Teste</title>
   </select>
   <input id="senha" name="pwd" type="password">
   <button id="btn-baixar" data-testid="download-btn">Baixar relatório</button>
+  <button id="btn-icone"><span id="ico-span">⬇ ícone</span></button>
   <div id="auto-12345678">ruído</div>
 </body></html>
 """
@@ -99,6 +100,10 @@ def main():
             page.click("#btn-baixar")
             page.wait_for_timeout(150)
 
+            # Clica no SPAN dentro de um botão -> deve capturar o BOTÃO ancestral.
+            page.click("#ico-span")
+            page.wait_for_timeout(150)
+
             browser.close()
 
     print("== Captura de eventos ==")
@@ -126,13 +131,18 @@ def main():
 
     check("capturou o select", len(selects) == 1 and selects[0]["value"] == "b")
 
-    check("capturou o clique no botão", len(clicks) == 1)
-    if clicks:
-        ct = types(clicks[0])
-        cv = values(clicks[0])
-        check("botão: id é o 1º candidato", ct[0] == "id" and cv[0] == "#btn-baixar")
+    check("capturou 2 cliques (botão + ícone)", len(clicks) == 2)
+    btn = next((c for c in clicks if any(v == "#btn-baixar" for v in values(c))), None)
+    check("botão: id é o 1º candidato", btn is not None and types(btn)[0] == "id")
+    if btn:
+        cv = values(btn)
         check("botão: inclui data-testid", any('data-testid="download-btn"' in v for v in cv))
-        check("botão: inclui candidato por texto", "text" in ct)
+        check("botão: inclui candidato por texto", "text" in types(btn))
+    # Clique no <span> dentro do botão deve ter capturado o BOTÃO (#btn-icone).
+    icon = next((c for c in clicks if any("#btn-icone" in v for v in values(c))), None)
+    check("clique no ícone capturou o botão ancestral (#btn-icone)", icon is not None)
+    check("ícone: não capturou o span interno",
+          icon is not None and not any("#ico-span" in v for v in values(icon)))
 
     print()
     if _failures:

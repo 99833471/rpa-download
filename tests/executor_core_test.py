@@ -78,6 +78,27 @@ def test_download(pw, d):
         check("arquivo não está vazio", os.path.getsize(os.path.join(dldir, files[0])) > 0)
 
 
+def test_download_no_marker(pw, d):
+    print("== Download SEM marcador (capturado globalmente) ==")
+    html = '<a id="dl" href="data:text/csv,a,b%0A1,2" download="rel.csv">Baixar</a>'
+    url = _url(d, "dlnm.html", html)
+    # Manifesto termina no clique, SEM passo 'download' (caso do robô do usuário).
+    manifest = RobotManifest(name="t", start_url=url, steps=[
+        Step(action="goto", url=url),
+        Step(action="click", selectors=[Selector("id", "#dl")]),
+    ])
+    dldir = os.path.join(d, "outnm")
+    browser = pw.chromium.launch(headless=True)
+    page = browser.new_context(accept_downloads=True).new_page()
+    res = ExecutionEngine(page, manifest, dldir, action_timeout=4000).run()
+    browser.close()
+    files = os.listdir(dldir) if os.path.isdir(dldir) else []
+    check("execução OK", res.ok)
+    check("baixou mesmo sem marcador de download", len(files) == 1)
+    if files:
+        check("arquivo com timestamp", files[0].endswith(" - rel.csv"))
+
+
 def test_popup_evasion(pw, d):
     print("== Evasão de pop-up (clique interceptado) ==")
     html = (
@@ -138,6 +159,7 @@ def main():
     test_naming()
     with tempfile.TemporaryDirectory() as d, sync_playwright() as pw:
         test_download(pw, d)
+        test_download_no_marker(pw, d)
         test_popup_evasion(pw, d)
         test_selector_fallback(pw, d)
         test_login_detection(pw, d)
