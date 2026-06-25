@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from playwright.sync_api import sync_playwright  # noqa: E402
 
+from app.executor.browser import ensure_chromium  # noqa: E402
 from app.executor.executor_core import ExecutionEngine, has_visible_password  # noqa: E402
 from app.robot_manifest import RobotManifest  # noqa: E402
 from app.services import crypto  # noqa: E402
@@ -67,8 +68,12 @@ _LOGIN_OVERLAY_JS = r"""
 
 
 def _emit(obj):
-    sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
+    try:
+        if sys.stdout is not None:
+            sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+    except (OSError, ValueError):
+        pass
 
 
 def _make_context(browser, session_path):
@@ -156,6 +161,7 @@ def main(argv=None) -> int:
     downloads = []
     error = ""
     try:
+        ensure_chromium(log)  # baixa o navegador no 1º uso, se necessário
         with sync_playwright() as pw:
             status, downloads = _run_headless(pw, manifest, start_url,
                                               args.download_dir, session_path, log)

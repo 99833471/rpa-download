@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 from .. import formula
 from ..robot_manifest import FIELD_FIXED, FIELD_FORMULA, FIELD_MANUAL, RobotManifest
+from ..subproc import child_command
 from . import dialogs
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -79,16 +80,16 @@ class ExecutionController(QObject):
         log_path = os.path.join(runs_dir, f"run_{ts}.log")
         session_path = os.path.join(robot_dir, "session.bin")
 
-        args = ["-m", "app.executor.executor_process",
-                "--manifest", tmp,
-                "--download-dir", robot_dir,
-                "--log", log_path]
+        exec_args = ["--manifest", tmp,
+                     "--download-dir", robot_dir,
+                     "--log", log_path]
         if os.path.isfile(session_path):
-            args += ["--session-in", session_path]
+            exec_args += ["--session-in", session_path]
+        program, arguments = child_command("executor", exec_args)
 
         proc = QProcess(self)
-        proc.setProgram(sys.executable)
-        proc.setArguments(args)
+        proc.setProgram(program)
+        proc.setArguments(arguments)
         proc.setWorkingDirectory(PROJECT_ROOT)
         proc.readyReadStandardOutput.connect(self._on_stdout)
         proc.finished.connect(self._on_finished)

@@ -9,14 +9,35 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 
 ---
 
+## ⬇️ Baixar o programa pronto (sem instalar Python)
+
+Quem só quer **usar** não precisa de Python nem de nada:
+
+1. Vá em **[Releases](https://github.com/99833471/rpa-download/releases/latest)** e
+   baixe o arquivo **`AUTOMATIZADOR_DOWNLOAD_DE_DADOS.zip`**.
+2. **Extraia a pasta** para um local fixo (ex.: `C:\AUTOMATIZADOR`).
+3. Abra **`AUTOMATIZADOR DOWNLOAD DE DADOS.exe`**.
+
+Na primeira vez que um robô rodar, o navegador (Chromium) é baixado
+automaticamente (precisa de internet uma vez).
+
+**Manter atualizado:** feche o programa e dê duplo-clique em **`atualizar.bat`**
+(dentro da pasta) — ele baixa e instala a versão mais recente sozinho.
+
+> Quem quer **desenvolver/rodar pelo código** continue na seção *Instalação* abaixo.
+
+---
+
 ## Stack
 
 | Camada | Tecnologia | Motivo |
 |---|---|---|
 | Interface gráfica | **PySide6 (Qt)** | Drag-and-drop, movimentação livre de ícones, temas QSS, menus de contexto. |
 | Persistência de metadados | **SQLite** | Ordem/descrição/posição que as pastas não guardam + fila de retry persistente. |
-| Manifesto por robô | **JSON** (próxima fase) | Portabilidade do robô (habilita exportação `.exe`). |
-| Automação web | **Playwright** (próxima fase) | Auto-waiting, `storage_state` para sessões, captura de downloads, gravador. |
+| Manifesto por robô | **JSON** | Portabilidade do robô (habilita exportação `.exe`). |
+| Automação web | **Playwright** | Auto-waiting, `storage_state` para sessões, captura de downloads, gravador. |
+| Sessões/login | **DPAPI (Windows)** | Cookies/localStorage salvos criptografados por usuário. |
+| Empacotamento | **PyInstaller** | App standalone (`.exe`) e exportação de robô individual. |
 
 ---
 

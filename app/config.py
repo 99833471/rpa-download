@@ -16,6 +16,10 @@ DEFAULT_THEME = "dark"
 
 
 def _config_dir() -> str:
+    # Override opcional (usado em testes para não tocar na config real do usuário).
+    override = os.environ.get("RPA_CONFIG_DIR")
+    if override:
+        return override
     base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
     return os.path.join(base, ORG_NAME)
 

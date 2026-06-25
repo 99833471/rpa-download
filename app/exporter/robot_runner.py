@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
-import subprocess
 import sys
 
 _FROZEN = getattr(sys, "frozen", False)
@@ -32,28 +31,10 @@ if not _FROZEN:
     # Permite importar o pacote "app" ao rodar como script.
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from app.executor.browser import ensure_chromium  # noqa: E402
+from app.robot_manifest import FIELD_FIXED, FIELD_FORMULA, FIELD_MANUAL, RobotManifest  # noqa: E402
 from app import formula  # noqa: E402
 from app.executor import executor_process  # noqa: E402
-from app.robot_manifest import FIELD_FIXED, FIELD_FORMULA, FIELD_MANUAL, RobotManifest  # noqa: E402
-
-
-def ensure_browser():
-    """Garante o Chromium do Playwright; baixa na 1ª execução se necessário."""
-    from playwright.sync_api import sync_playwright
-    try:
-        with sync_playwright() as pw:
-            b = pw.chromium.launch(headless=True)
-            b.close()
-        return
-    except Exception:
-        print("Preparando o navegador na primeira execução (baixando)…")
-    try:
-        from playwright._impl._driver import compute_driver_executable, get_driver_env
-        exe = compute_driver_executable()
-        cmd = list(exe) if isinstance(exe, (list, tuple)) else [exe]
-        subprocess.run([*cmd, "install", "chromium"], env=get_driver_env(), check=False)
-    except Exception as e:
-        print(f"Aviso: não foi possível instalar o navegador automaticamente: {e}")
 
 
 def resolve_fields(manifest: RobotManifest):
@@ -124,7 +105,7 @@ def main(argv=None) -> int:
     resolved_path = os.path.join(out_dir, "_resolved_robot.json")
     manifest.save(resolved_path)
 
-    ensure_browser()
+    ensure_chromium(print)
 
     rc = executor_process.main([
         "--manifest", resolved_path,

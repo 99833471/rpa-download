@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from playwright.sync_api import sync_playwright  # noqa: E402
 
+from app.executor.browser import ensure_chromium  # noqa: E402
 from app.recorder.recorder_core import RecordingSession  # noqa: E402
 from app.services import crypto  # noqa: E402
 
@@ -52,6 +53,8 @@ def _set_cancel(session):
 
 def main(argv=None) -> int:
     args = _parse_args(argv if argv is not None else sys.argv[1:])
+
+    ensure_chromium()  # baixa o navegador no 1º uso, se necessário
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=args.headless)

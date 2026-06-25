@@ -31,6 +31,14 @@ class ExportController(QObject):
         return self.proc is not None
 
     def export(self, robot_id: int) -> None:
+        if getattr(sys, "frozen", False):
+            dialogs.info(
+                self.parent, "Indisponível no executável",
+                "A geração de .exe por robô requer a versão instalada via código\n"
+                "(Python + PyInstaller). Rode o programa a partir do código-fonte\n"
+                "para exportar robôs individualmente.",
+            )
+            return
         if self.is_running():
             dialogs.info(self.parent, "Exportação em andamento",
                          "Aguarde a geração atual terminar.")

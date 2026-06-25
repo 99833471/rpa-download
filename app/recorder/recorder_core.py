@@ -10,16 +10,29 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 
-RECORDER_JS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "recorder.js")
 # Navegações que ocorrem até este intervalo após uma ação são tratadas como
 # efeito de um clique já gravado (não viram passo 'goto' duplicado).
 _NAV_DEBOUNCE_S = 1.5
 
 
+def _recorder_js_path() -> str:
+    """Localiza o recorder.js — em desenvolvimento e dentro do .exe (bundle)."""
+    candidates = [os.path.join(os.path.dirname(os.path.abspath(__file__)), "recorder.js")]
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        candidates.append(os.path.join(base, "app", "recorder", "recorder.js"))
+        candidates.append(os.path.join(base, "recorder.js"))
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return candidates[0]
+
+
 def load_recorder_js() -> str:
-    with open(RECORDER_JS_PATH, "r", encoding="utf-8") as f:
+    with open(_recorder_js_path(), "r", encoding="utf-8") as f:
         return f.read()
 
 

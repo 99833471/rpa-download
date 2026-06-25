@@ -16,6 +16,7 @@ import tempfile
 from PySide6.QtCore import QObject, QProcess, Signal
 from PySide6.QtWidgets import QDialog, QMessageBox
 
+from ..subproc import child_command
 from . import dialogs
 from .recording_review import RecordingReviewDialog
 
@@ -98,16 +99,16 @@ class RecordingController(QObject):
             "backup_session": _read_bytes(session_out),
         }
 
-        args = ["-m", "app.recorder.recorder_process",
-                "--start-url", start_url,
-                "--steps-out", steps_out,
-                "--session-out", session_out]
+        rec_args = ["--start-url", start_url,
+                    "--steps-out", steps_out,
+                    "--session-out", session_out]
         if session_in:
-            args += ["--session-in", session_in]
+            rec_args += ["--session-in", session_in]
+        program, arguments = child_command("recorder", rec_args)
 
         proc = QProcess(self)
-        proc.setProgram(sys.executable)
-        proc.setArguments(args)
+        proc.setProgram(program)
+        proc.setArguments(arguments)
         proc.setWorkingDirectory(PROJECT_ROOT)
         proc.finished.connect(self._on_finished)
         proc.errorOccurred.connect(self._on_error)

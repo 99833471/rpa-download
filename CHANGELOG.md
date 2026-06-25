@@ -4,6 +4,29 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-06-25
+
+### Adicionado
+
+- **Aplicativo standalone (`.exe`)**: o programa principal agora pode ser
+  empacotado num executável que **não exige Python** no computador do usuário
+  (distribuído como `.zip`). O navegador (Chromium) é baixado no primeiro uso.
+- Auto-atualizador da versão `.exe` (`atualizar.bat` + `_update.ps1`) que baixa e
+  instala a release mais recente do GitHub.
+- Script de build `tools/build_app.py` e `build_app.bat`.
+
+### Alterado
+
+- Subprocessos de execução/gravação agora funcionam no app congelado via um
+  **despachante** no próprio executável (substitui `python -m ...`).
+- `PLAYWRIGHT_BROWSERS_PATH` é fixado em um local estável; navegador baixado sob
+  demanda também no app principal.
+
+### Observações
+
+- No app empacotado, a exportação de robô individual em `.exe` fica desabilitada
+  (requer a versão por código, com PyInstaller).
+
 ## [1.0.0] - 2026-06-25
 
 Primeira versão completa — todas as 5 fases implementadas e cobertas por testes.
