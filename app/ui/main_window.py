@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         self.retry = retry_worker
         self.theme_name = theme_name
 
-        self.setWindowTitle("AUTOMATIZADOR DOWNLOAD DE DADOS")
+        self.setWindowTitle(config.APP_DISPLAY_NAME)
         self.resize(1180, 760)
 
         central = QWidget()
@@ -56,7 +56,7 @@ class MainWindow(QMainWindow):
 
         title_box = QVBoxLayout()
         title_box.setSpacing(0)
-        title = QLabel("AUTOMATIZADOR DOWNLOAD DE DADOS")
+        title = QLabel(config.APP_DISPLAY_NAME)
         title.setObjectName("AppTitle")
         subtitle = QLabel(config.get_data_root() or "")
         subtitle.setObjectName("AppSubtitle")

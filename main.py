@@ -46,18 +46,22 @@ def _dispatch_subprocess() -> None:
 
 
 def run_gui() -> int:
+    from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
     from app import config
     from app.bootstrap import seed_if_empty
     from app.db import Database
+    from app.resources import icon_path
+    from app.services.folder_icon import set_folder_icon
     from app.services.folder_mirror import FolderMirror
     from app.services.retry_worker import RetryWorker
     from app.ui.main_window import MainWindow
     from app.ui.theme import build_qss
 
     app = QApplication(sys.argv)
-    app.setApplicationName("AUTOMATIZADOR DOWNLOAD DE DADOS")
+    app.setApplicationName(config.APP_DISPLAY_NAME)
+    app.setWindowIcon(QIcon(icon_path()))
 
     data_root = config.get_data_root()
     if data_root is None:
@@ -76,6 +80,7 @@ def run_gui() -> int:
 
     seed_if_empty(db, mirror)
     mirror.reconcile()
+    set_folder_icon(data_root, icon_path())  # ícone na pasta de dados (Windows)
 
     retry_worker = RetryWorker(config.db_path(data_root), data_root)
     retry_worker.start()

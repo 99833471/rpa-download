@@ -4,6 +4,26 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.3.0] - 2026-06-25
+
+### Alterado
+
+- **Renomeado para "RPA Download"**; a pasta de dados criada passa a se chamar
+  **`RPA-DOWNLOAD`** (instalações novas; instalações existentes mantêm a pasta já
+  configurada).
+
+### Adicionado
+
+- **Ícone próprio** do programa (janela, executável e **na pasta de dados** no
+  Windows Explorer via desktop.ini).
+
+### Mitigações de antivírus (falso positivo)
+
+- Executável agora tem **metadados** (empresa/produto/versão), **ícone** e é
+  compilado **sem UPX** — reduz a chance de o antivírus sinalizar.
+- Observação: sem **assinatura digital (Authenticode)**, ainda pode haver alertas
+  em alguns ambientes. Veja o README para como reportar falso positivo / liberar.
+
 ## [1.2.1] - 2026-06-25
 
 ### Corrigido

@@ -2,7 +2,7 @@
 
 O config.json (que aponta para o diretório raiz escolhido pelo usuário e o tema)
 fica em %LOCALAPPDATA%/RPADownload. Os dados em si (pastas espelhadas + banco)
-ficam dentro de "<raiz escolhida>/AUTOMATIZADOR DOWNLOAD DE DADOS".
+ficam dentro de "<raiz escolhida>/RPA-DOWNLOAD".
 """
 
 from __future__ import annotations
@@ -10,7 +10,8 @@ from __future__ import annotations
 import json
 import os
 
-APP_FOLDER_NAME = "AUTOMATIZADOR DOWNLOAD DE DADOS"
+APP_DISPLAY_NAME = "RPA Download"
+APP_FOLDER_NAME = "RPA-DOWNLOAD"
 ORG_NAME = "RPADownload"
 DEFAULT_THEME = "dark"
 

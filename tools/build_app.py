@@ -17,7 +17,8 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-APP_NAME = "AUTOMATIZADOR DOWNLOAD DE DADOS"
+APP_NAME = "RPA Download"
+ICON = os.path.join(ROOT, "app", "assets", "icon.ico")
 
 # Saída do build. Pode ser redirecionada para FORA do OneDrive (que costuma
 # travar arquivos durante o build) via as variáveis RPA_DIST / RPA_WORK.
@@ -25,11 +26,11 @@ DIST = os.environ.get("RPA_DIST", os.path.join(ROOT, "dist"))
 BUILD = os.environ.get("RPA_WORK", os.path.join(ROOT, "build"))
 APP_DIR = os.path.join(DIST, APP_NAME)
 
-_LEIAME = """AUTOMATIZADOR DOWNLOAD DE DADOS
+_LEIAME = """RPA DOWNLOAD
 
 COMO USAR
-1. Extraia esta pasta inteira para um local fixo (ex.: C:\\AUTOMATIZADOR).
-2. Abra "AUTOMATIZADOR DOWNLOAD DE DADOS.exe".
+1. Extraia esta pasta inteira para um local fixo (ex.: C:\\RPA-DOWNLOAD).
+2. Abra "RPA Download.exe".
 3. Na primeira vez, escolha uma pasta raiz onde os dados serao guardados.
 
 Observacao: na primeira vez que um robo for executado, o navegador (Chromium)
@@ -47,15 +48,57 @@ ONEFILE_DIST = os.path.join(DIST, "onefile")
 ONEFILE_EXE = os.path.join(ONEFILE_DIST, APP_NAME + ".exe")
 
 
+def _read_version():
+    init = os.path.join(ROOT, "app", "__init__.py")
+    try:
+        for line in open(init, encoding="utf-8"):
+            if line.strip().startswith("__version__"):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return "1.0.0"
+
+
+def _version_file():
+    """Gera o arquivo de metadados (VS_VERSIONINFO) do .exe — reduz falso positivo
+    de antivírus, pois um executável 'anônimo' é mais suspeito."""
+    version = _read_version()
+    a, b, c, d = (int(x) for x in (version.split(".") + ["0", "0", "0", "0"])[:4])
+    os.makedirs(BUILD, exist_ok=True)
+    path = os.path.join(BUILD, "version_info.txt")
+    content = f"""# UTF-8
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=({a}, {b}, {c}, {d}), prodvers=({a}, {b}, {c}, {d}),
+    mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
+  kids=[
+    StringFileInfo([StringTable('040904B0', [
+      StringStruct('CompanyName', 'Anheuser-Busch InBev'),
+      StringStruct('FileDescription', 'RPA Download - automatizador de downloads'),
+      StringStruct('FileVersion', '{version}'),
+      StringStruct('InternalName', 'RPA Download'),
+      StringStruct('OriginalFilename', 'RPA Download.exe'),
+      StringStruct('ProductName', 'RPA Download'),
+      StringStruct('ProductVersion', '{version}')])]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])])
+"""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return path
+
+
 def _common_args(recorder_js):
     return [
         sys.executable, "-m", "PyInstaller",
-        "--noconfirm", "--windowed",
+        "--noconfirm", "--windowed", "--noupx",
         "--name", APP_NAME,
+        "--icon", ICON,
+        "--version-file", _version_file(),
         "--collect-all", "playwright",
         "--collect-submodules", "app",
         "--collect-all", "holidays",
         "--add-data", f"{recorder_js}{os.pathsep}app/recorder",
+        "--add-data", f"{ICON}{os.pathsep}app/assets",
     ]
 
 

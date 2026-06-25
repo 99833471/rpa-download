@@ -1,4 +1,4 @@
-# AUTOMATIZADOR DOWNLOAD DE DADOS
+# RPA Download
 
 Aplicativo desktop (Python) que funciona como **orquestrador/dashboard** de robôs
 de extração de dados em sites. O usuário cria, organiza e executa robôs em uma
@@ -11,21 +11,28 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 
 ## ⬇️ Usar o programa pronto (sem instalar Python)
 
-Quem só quer **usar** não precisa de Python. Há duas formas (compartilhadas
-internamente — OneDrive / rede / e-mail):
-
-- **`AUTOMATIZADOR_DOWNLOAD_DE_DADOS.exe`** — arquivo **único, pronto para uso**:
-  basta dar duplo-clique. (Abre um pouco mais devagar na 1ª vez de cada execução,
-  pois se descompacta sozinho.)
-- **`AUTOMATIZADOR_DOWNLOAD_DE_DADOS.zip`** — versão em pasta: **extraia** e abra o
-  `AUTOMATIZADOR DOWNLOAD DE DADOS.exe` de dentro dela. Abre mais rápido.
+Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.exe`**
+(compartilhado internamente — OneDrive / rede / e-mail) e dê **duplo-clique**.
 
 Na primeira vez que um robô rodar, o navegador (Chromium) é baixado
-automaticamente (precisa de internet uma vez).
+automaticamente (precisa de internet uma vez). Na 1ª execução o programa cria a
+pasta de dados **`RPA-DOWNLOAD`** no diretório que você escolher.
 
-**Atualizar:** substitua o `.exe`/pasta pela versão mais recente.
+**Atualizar:** substitua o `.exe` pela versão mais recente.
 
-> O repositório é **privado**. Colaboradores com acesso podem baixar o `.zip` em
+### ⚠️ Antivírus / SmartScreen
+
+O `.exe` **não é assinado digitalmente**, então o Windows Defender/SmartScreen ou
+o antivírus podem alertar (falso positivo comum de programas empacotados com
+PyInstaller). Não é vírus. Para liberar:
+
+- **SmartScreen:** "Mais informações" → "Executar assim mesmo".
+- **Defender/Antivírus:** adicione a pasta do `.exe` à lista de exclusões, ou peça
+  ao TI uma exceção/whitelist (ou um **certificado de assinatura**, que elimina o
+  alerta de vez).
+- Reportar falso positivo à Microsoft: <https://www.microsoft.com/wdsi/filesubmission>
+
+> O repositório é **privado**. Colaboradores com acesso baixam em
 > [Releases](https://github.com/99833471/rpa-download/releases/latest); para
 > **desenvolver pelo código**, veja *Instalação* abaixo.
 
@@ -65,9 +72,9 @@ python -m venv .venv
 Ou simplesmente dê **duplo-clique em `run.bat`**.
 
 Na **primeira execução** o programa pede um diretório raiz e cria dentro dele a
-pasta `AUTOMATIZADOR DOWNLOAD DE DADOS`. A configuração (raiz escolhida + tema)
+pasta `RPA-DOWNLOAD`. A configuração (raiz escolhida + tema)
 fica em `%LOCALAPPDATA%\RPADownload\config.json`. O banco fica em
-`<raiz>\AUTOMATIZADOR DOWNLOAD DE DADOS\.rpa\app.db`.
+`<raiz>\RPA-DOWNLOAD\.rpa\app.db`.
 
 ## Manter sempre na versão mais recente
 
@@ -101,7 +108,7 @@ Fluxo recomendado no dia a dia: **`atualizar.bat`** (atualiza) → **`run.bat`**
 ## O que já funciona (Fase 1)
 
 - **Espelhamento de pastas**: cada Tela/Bloco/Robô vira uma pasta física
-  `…/AUTOMATIZADOR…/<Tela>/<Bloco>/<Robô>/`. Criar, renomear, mover e excluir na
+  `…/RPA-DOWNLOAD/<Tela>/<Bloco>/<Robô>/`. Criar, renomear, mover e excluir na
   UI reflete no disco. Renomear uma Tela move toda a subárvore.
 - **Higienização de nomes**: remove `< > : " / \ | ? *` e nomes reservados do
   Windows; deduplica colisões como o Explorer (` (2)`, ` (3)`).
