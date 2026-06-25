@@ -32,7 +32,8 @@ Observacao: na primeira vez que um robo for executado, o navegador (Chromium)
 e baixado automaticamente (precisa de internet uma unica vez).
 
 ATUALIZAR PARA A VERSAO MAIS RECENTE
-- Feche o programa e de duplo-clique em "atualizar.bat".
+Peca a versao mais recente (arquivo .zip) a quem lhe enviou o programa,
+extraia e substitua esta pasta.
 
 Voce NAO precisa instalar Python nem nada alem disto.
 """
@@ -61,11 +62,12 @@ def package() -> int:
     if not os.path.isdir(APP_DIR):
         print("Pasta do app não encontrada:", APP_DIR)
         return 1
-    # Auto-atualizador (versão .exe) + LEIAME dentro da pasta distribuída.
-    shutil.copyfile(os.path.join(ROOT, "tools", "dist_atualizar.bat"),
-                    os.path.join(APP_DIR, "atualizar.bat"))
-    shutil.copyfile(os.path.join(ROOT, "tools", "dist_update.ps1"),
-                    os.path.join(APP_DIR, "_update.ps1"))
+    # Remove eventuais atualizadores antigos (não se aplicam à distribuição
+    # manual de repositório privado).
+    for stale in ("atualizar.bat", "_update.ps1"):
+        p = os.path.join(APP_DIR, stale)
+        if os.path.isfile(p):
+            os.remove(p)
     with open(os.path.join(APP_DIR, "LEIAME.txt"), "w", encoding="utf-8") as f:
         f.write(_LEIAME)
 

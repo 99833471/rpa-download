@@ -10,10 +10,10 @@ e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 - **Aplicativo standalone (`.exe`)**: o programa principal agora pode ser
   empacotado num executável que **não exige Python** no computador do usuário
-  (distribuído como `.zip`). O navegador (Chromium) é baixado no primeiro uso.
-- Auto-atualizador da versão `.exe` (`atualizar.bat` + `_update.ps1`) que baixa e
-  instala a release mais recente do GitHub.
-- Script de build `tools/build_app.py` e `build_app.bat`.
+  (distribuído como `.zip`, com `LEIAME.txt`). O navegador (Chromium) é baixado no
+  primeiro uso.
+- Scripts de build/validação: `tools/build_app.py`, `build_app.bat`,
+  `tools/validate_app.py`.
 
 ### Alterado
 
