@@ -4,6 +4,23 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.5.0] - 2026-06-25
+
+### Adicionado
+
+- **Atualizador automático embutido**: o programa verifica a release mais recente
+  no GitHub e instala com um clique (botão **"Atualizar"** na barra superior); ao
+  iniciar, avisa se há versão nova. (Baixa o novo `.exe` e o substitui sozinho.)
+- **Execução com navegador visível** (passo a passo) por padrão, com o interruptor
+  **"👁 Navegador visível"** para rodar de forma invisível quando preferir.
+
+### Alterado
+
+- **Repositório tornado público**, habilitando o atualizador para qualquer usuário
+  (sem necessidade de login no GitHub).
+- No modo visível, o **login de SSO é feito na própria janela** da execução (não
+  abre uma segunda janela).
+
 ## [1.4.2] - 2026-06-25
 
 ### Alterado (aparência / dimensionamento)

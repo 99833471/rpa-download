@@ -77,8 +77,10 @@ def _emit(obj):
         pass
 
 
-def _make_context(browser, session_path):
+def _make_context(browser, session_path, headed=False):
     kwargs = {"accept_downloads": True}
+    if headed:
+        kwargs["no_viewport"] = True  # site ocupa a janela toda (sem margem cinza)
     if session_path and os.path.isfile(session_path):
         try:
             kwargs["storage_state"] = json.loads(crypto.load_text_encrypted(session_path))
@@ -87,17 +89,55 @@ def _make_context(browser, session_path):
     return browser.new_context(**kwargs)
 
 
-def _run_headless(pw, manifest, start_url, download_dir, session_path, log):
-    browser = pw.chromium.launch(headless=True)
+def _wait_login_done(context, page, session_path, log):
+    """Mostra o overlay 'Já fiz login' na página atual e espera o usuário logar."""
+    done = {"v": False}
     try:
-        ctx = _make_context(browser, session_path)
+        context.expose_binding("__rpa_login_done", lambda *_: done.__setitem__("v", True))
+    except Exception:
+        pass  # já exposto neste contexto
+    context.add_init_script(_LOGIN_OVERLAY_JS)
+    try:
+        page.evaluate(_LOGIN_OVERLAY_JS)  # injeta também na página já carregada
+    except Exception:
+        pass
+    page.on("close", lambda *_: done.__setitem__("v", "closed"))
+    log("Faça login na janela do navegador e clique em “Já fiz login”…")
+    while done["v"] is False:
+        try:
+            page.wait_for_timeout(200)
+        except Exception:
+            done["v"] = "closed"
+    if done["v"] == "closed":
+        return False
+    try:
+        crypto.save_text_encrypted(session_path, json.dumps(context.storage_state()))
+        log("Sessão recapturada e salva.")
+    except Exception as e:  # noqa: BLE001
+        log(f"Aviso: não foi possível salvar a sessão: {e}")
+    return True
+
+
+def _run(pw, manifest, start_url, download_dir, session_path, log, headed):
+    launch_args = ["--start-maximized"] if headed else []
+    browser = pw.chromium.launch(headless=not headed, args=launch_args)
+    try:
+        ctx = _make_context(browser, session_path, headed)
         page = ctx.new_page()
         try:
             page.goto(start_url, wait_until="domcontentloaded", timeout=30000)
         except Exception:
             pass
         if is_login_page(page):
-            return "needs_login", [], []
+            if not headed:
+                return "needs_login", [], []
+            # Visível: o usuário loga na própria janela (sem abrir outra).
+            if not _wait_login_done(ctx, page, session_path, log):
+                return "cancel", [], []
+            try:
+                page.goto(start_url, wait_until="domcontentloaded", timeout=60000)
+            except Exception:
+                pass
         engine = ExecutionEngine(page, manifest, download_dir, log=log)
         res = engine.execute()
         return ("ok" if res.ok else "error"), res.downloads, engine.step_results
@@ -107,29 +147,15 @@ def _run_headless(pw, manifest, start_url, download_dir, session_path, log):
 
 def _manual_login(pw, start_url, session_path, log):
     log("Abrindo navegador para login manual…")
-    browser = pw.chromium.launch(headless=False)
+    browser = pw.chromium.launch(headless=False, args=["--start-maximized"])
     try:
-        ctx = _make_context(browser, session_path)
-        done = {"v": False}
-        ctx.expose_binding("__rpa_login_done", lambda *_: done.__setitem__("v", True))
-        ctx.add_init_script(_LOGIN_OVERLAY_JS)
+        ctx = _make_context(browser, session_path, headed=True)
         page = ctx.new_page()
-        page.on("close", lambda *_: done.__setitem__("v", "closed"))
         try:
             page.goto(start_url, wait_until="domcontentloaded", timeout=60000)
         except Exception:
             pass
-        while done["v"] is False:
-            try:
-                page.wait_for_timeout(200)
-            except Exception:
-                done["v"] = "closed"
-        if done["v"] == "closed":
-            return False
-        state = ctx.storage_state()
-        crypto.save_text_encrypted(session_path, json.dumps(state))
-        log("Sessão recapturada e salva.")
-        return True
+        return _wait_login_done(ctx, page, session_path, log)
     finally:
         browser.close()
 
@@ -141,6 +167,7 @@ def _parse(argv):
     p.add_argument("--session-in", default="")
     p.add_argument("--start-url", default="")
     p.add_argument("--log", default="")
+    p.add_argument("--headed", action="store_true", help="navegador visível")
     return p.parse_args(argv)
 
 
@@ -165,13 +192,13 @@ def main(argv=None) -> int:
     try:
         ensure_chromium(log)  # baixa o navegador no 1º uso, se necessário
         with sync_playwright() as pw:
-            status, downloads, results = _run_headless(pw, manifest, start_url,
-                                                       args.download_dir, session_path, log)
-            if status == "needs_login":
+            status, downloads, results = _run(pw, manifest, start_url,
+                                              args.download_dir, session_path, log, args.headed)
+            if status == "needs_login":  # só ocorre no modo invisível (headless)
                 _emit({"type": "login_required"})
                 if _manual_login(pw, start_url, session_path, log):
-                    status, downloads, r2 = _run_headless(pw, manifest, start_url,
-                                                          args.download_dir, session_path, log)
+                    status, downloads, r2 = _run(pw, manifest, start_url,
+                                                 args.download_dir, session_path, log, args.headed)
                     results = results + r2
                 else:
                     status = "cancel"

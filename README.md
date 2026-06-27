@@ -11,14 +11,16 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 
 ## ⬇️ Usar o programa pronto (sem instalar Python)
 
-Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.exe`**
-(compartilhado internamente — OneDrive / rede / e-mail) e dê **duplo-clique**.
+Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.exe`** na
+página de **[Releases](https://github.com/99833471/rpa-download/releases/latest)**
+e dê **duplo-clique**.
 
 Na primeira vez que um robô rodar, o navegador (Chromium) é baixado
 automaticamente (precisa de internet uma vez). Na 1ª execução o programa cria a
 pasta de dados **`RPA-DOWNLOAD`** no diretório que você escolher.
 
-**Atualizar:** substitua o `.exe` pela versão mais recente.
+**Atualizar:** o próprio programa verifica e instala a versão mais recente —
+clique em **"🔄 Atualizar"** na barra superior (ele avisa quando há novidade).
 
 ### ⚠️ Antivírus / SmartScreen
 
@@ -32,9 +34,7 @@ PyInstaller). Não é vírus. Para liberar:
   alerta de vez).
 - Reportar falso positivo à Microsoft: <https://www.microsoft.com/wdsi/filesubmission>
 
-> O repositório é **privado**. Colaboradores com acesso baixam em
-> [Releases](https://github.com/99833471/rpa-download/releases/latest); para
-> **desenvolver pelo código**, veja *Instalação* abaixo.
+> Para **desenvolver/rodar pelo código**, veja *Instalação* abaixo.
 
 ---
 

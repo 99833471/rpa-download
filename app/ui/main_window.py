@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
 from .. import config
 from .dashboard import Dashboard
 from .theme import build_qss
+from .update_controller import UpdateController
 
 
 class MainWindow(QMainWindow):
@@ -27,6 +29,9 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle(config.APP_DISPLAY_NAME)
         self.resize(1180, 760)
+
+        self.updater = UpdateController(self)
+        self.updater.availability.connect(self._on_update_availability)
 
         central = QWidget()
         outer = QVBoxLayout(central)
@@ -48,6 +53,19 @@ class MainWindow(QMainWindow):
         if retry_worker is not None:
             retry_worker.pendingChanged.connect(self._on_pending_changed)
 
+        self.updater.check_async()  # verifica atualização em segundo plano
+
+    def _on_update_availability(self, info) -> None:
+        if info:
+            self.update_btn.setText(f"⬆  Atualizar para {info['tag']}")
+            self.update_btn.setObjectName("Primary")
+            self.update_btn.setStyleSheet("")  # reaplica o estilo do objectName
+            self.style().unpolish(self.update_btn)
+            self.style().polish(self.update_btn)
+            self._set_status(f"Atualização disponível: {info['tag']}")
+        else:
+            self.update_btn.setText("🔄  Atualizar")
+
     def _build_top_bar(self) -> QWidget:
         bar = QWidget()
         bar.setObjectName("TopBar")
@@ -64,6 +82,20 @@ class MainWindow(QMainWindow):
         title_box.addWidget(subtitle)
         layout.addLayout(title_box)
         layout.addStretch(1)
+
+        self.headed_check = QCheckBox("👁  Navegador visível")
+        self.headed_check.setToolTip(
+            "Mostra o navegador durante a execução (passo a passo).\n"
+            "Desmarque para rodar de forma invisível."
+        )
+        self.headed_check.setChecked(config.get_execution_headed())
+        self.headed_check.toggled.connect(config.set_execution_headed)
+        layout.addWidget(self.headed_check)
+
+        self.update_btn = QPushButton("🔄  Atualizar")
+        self.update_btn.setToolTip("Verificar e instalar a versão mais recente")
+        self.update_btn.clicked.connect(self.updater.check_and_prompt)
+        layout.addWidget(self.update_btn)
 
         self.theme_btn = QPushButton()
         self.theme_btn.setToolTip("Alternar tema claro/escuro")
@@ -97,6 +129,8 @@ class MainWindow(QMainWindow):
             self._set_status("Pronto.")
 
     def closeEvent(self, event):
+        if getattr(self, "updater", None) is not None:
+            self.updater.shutdown()
         if self.retry is not None:
             self.retry.stop()
             self.retry.wait(2000)

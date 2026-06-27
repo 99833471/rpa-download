@@ -85,6 +85,9 @@ class ExecutionController(QObject):
                      "--log", log_path]
         if os.path.isfile(session_path):
             exec_args += ["--session-in", session_path]
+        from .. import config
+        if config.get_execution_headed():
+            exec_args.append("--headed")
         program, arguments = child_command("executor", exec_args)
 
         proc = QProcess(self)

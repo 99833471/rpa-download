@@ -76,3 +76,14 @@ def set_theme(theme: str) -> None:
     cfg = load_config()
     cfg["theme"] = theme
     save_config(cfg)
+
+
+def get_execution_headed() -> bool:
+    """True = navegador visível durante a execução (padrão)."""
+    return bool(load_config().get("execution_headed", True))
+
+
+def set_execution_headed(value: bool) -> None:
+    cfg = load_config()
+    cfg["execution_headed"] = bool(value)
+    save_config(cfg)
