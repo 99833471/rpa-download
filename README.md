@@ -12,7 +12,7 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 ## ⬇️ Usar o programa pronto (sem instalar Python)
 
 Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.exe`** na
-página de **[Releases](https://github.com/99833471/rpa-download/releases/latest)**
+página de **[Releases](https://github.com/victoraalm/rpa-download/releases/latest)**
 e dê **duplo-clique**.
 
 Na primeira vez que um robô rodar, o navegador (Chromium) é baixado
@@ -56,7 +56,7 @@ PyInstaller). Não é vírus. Para liberar:
 Pré-requisitos: **Windows** + **Python 3.12+** + **Git** (ou GitHub Desktop).
 
 ```powershell
-git clone https://github.com/99833471/rpa-download.git
+git clone https://github.com/victoraalm/rpa-download.git
 cd rpa-download
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt

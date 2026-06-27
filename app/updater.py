@@ -8,7 +8,7 @@ import urllib.request
 
 from app import __version__ as APP_VERSION
 
-REPO = "99833471/rpa-download"
+REPO = "victoraalm/rpa-download"
 _API_LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
 
 

@@ -4,6 +4,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.5.1] - 2026-06-25
+
+### Alterado
+
+- **Migração do repositório para a conta `victoraalm`** (mesmo nome do repo). O
+  atualizador automático passa a usar `victoraalm/rpa-download`. Instalações já
+  distribuídas continuam se atualizando graças ao **redirecionamento** que o GitHub
+  cria após a transferência.
+
 ## [1.5.0] - 2026-06-25
 
 ### Adicionado
@@ -185,4 +194,4 @@ Primeira versão completa — todas as 5 fases implementadas e cobertas por test
 - **Infra**
   - Suíte de testes automatizados (11 conjuntos) e documentação.
 
-[1.0.0]: https://github.com/99833471/rpa-download/releases/tag/v1.0.0
+[1.0.0]: https://github.com/victoraalm/rpa-download/releases/tag/v1.0.0
