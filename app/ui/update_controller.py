@@ -18,7 +18,25 @@ from PySide6.QtWidgets import QApplication, QProgressDialog
 from .. import updater
 from . import dialogs
 
-_DETACHED = 0x00000008  # DETACHED_PROCESS
+_CREATE_NO_WINDOW = 0x08000000  # console oculto (necessário p/ tasklist/ping no .bat)
+
+
+def build_update_bat(exe: str, new_exe: str, image_name: str = "RPA Download.exe") -> str:
+    """Gera o .bat que espera o app fechar, troca o executável e reabre.
+
+    Usa 'ping' como pausa (não depende de entrada de console, ao contrário de
+    'timeout'), para funcionar de forma robusta em processo sem janela.
+    """
+    return (
+        "@echo off\r\n"
+        ":wait\r\n"
+        f'tasklist /FI "IMAGENAME eq {image_name}" 2>nul | find /I "{image_name}" >nul\r\n'
+        "if not errorlevel 1 ( ping -n 2 127.0.0.1 >nul & goto wait )\r\n"
+        "ping -n 2 127.0.0.1 >nul\r\n"
+        f'move /y "{new_exe}" "{exe}" >nul\r\n'
+        f'start "" "{exe}"\r\n'
+        'del "%~f0"\r\n'
+    )
 
 
 class _CheckThread(QThread):
@@ -141,21 +159,12 @@ class UpdateController(QObject):
     def _apply(self, new_exe):
         exe = sys.executable
         bat = os.path.join(tempfile.gettempdir(), "rpa_update.bat")
-        content = (
-            "@echo off\r\n"
-            "chcp 65001 >nul\r\n"
-            ":wait\r\n"
-            'tasklist /FI "IMAGENAME eq RPA Download.exe" 2>nul | find /I "RPA Download.exe" >nul\r\n'
-            "if not errorlevel 1 ( timeout /t 1 /nobreak >nul & goto wait )\r\n"
-            f'move /y "{new_exe}" "{exe}" >nul\r\n'
-            f'start "" "{exe}"\r\n'
-            'del "%~f0"\r\n'
-        )
+        content = build_update_bat(exe, new_exe, os.path.basename(exe))
         try:
             with open(bat, "w", encoding="utf-8") as f:
                 f.write(content)
             subprocess.Popen(["cmd", "/c", bat],
-                             creationflags=_DETACHED | subprocess.CREATE_NEW_PROCESS_GROUP,
+                             creationflags=_CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
                              close_fds=True)
         except Exception as e:  # noqa: BLE001
             dialogs.info(self.parent, "Atualização", f"Não foi possível iniciar a troca:\n{e}")

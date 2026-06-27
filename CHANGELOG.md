@@ -4,6 +4,18 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.5.2] - 2026-06-25
+
+### Corrigido (auto-atualizador)
+
+- A troca do executável durante a atualização travava: o `.bat` era iniciado
+  **sem console**, o que impedia a etapa de espera (`timeout`). Agora usa `ping`
+  como pausa (não depende de console) e roda com **console oculto** — a
+  substituição do `.exe` e o reinício funcionam de forma confiável.
+- ⚠️ **Instalações v1.5.0/v1.5.1** já trazem a versão antiga (com falha) do
+  atualizador embutido. **Baixe a v1.5.2 manualmente uma vez**; a partir dela, o
+  botão **"🔄 Atualizar"** passa a funcionar sozinho.
+
 ## [1.5.1] - 2026-06-25
 
 ### Alterado
