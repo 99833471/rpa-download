@@ -48,7 +48,7 @@ def main():
 
     # Define o campo de data como Fórmula.
     row = dlg._rows[1]
-    combo, edit = row["combo"], row["edit"]
+    combo, edit = row["mode"], row["value"]
     check("linha do fill tem combo de tipo", combo is not None)
     # Seleciona "Fórmula" pelo data.
     for i in range(combo.count()):
@@ -91,6 +91,17 @@ def main():
     check("campo manual com tipo de dado 'data'",
           f2.type == FIELD_MANUAL and f2.data_type == DT_DATE)
     check("nome do campo manual preservado", f2.name == "Data inicial")
+
+    # Clique pode ser marcado como opcional (pop-up) e tem nome.
+    crow = dlg._rows[2]  # o clique "Baixar"
+    check("linha de clique configurável", crow is not None and crow["action"] == "click")
+    for i in range(crow["mode"].count()):
+        if crow["mode"].itemData(i) is True:  # "Clicar se aparecer (opcional)"
+            crow["mode"].setCurrentIndex(i)
+            break
+    m3 = dlg.build_manifest("Robô Custos")
+    check("clique marcado como opcional (pop-up)", m3.steps[2].optional is True)
+    check("passo de clique tem nome sugerido", bool(m3.steps[2].name))
 
     print()
     if _failures:

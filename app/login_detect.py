@@ -16,9 +16,11 @@ _AUTH_HOST_SUBSTRINGS = (
     "onelogin.com", "pingidentity", "auth0.com", "accounts.google.com",
     "signin.aws", "fs.",
 )
-# Trechos de caminho típicos de fluxos de autenticação.
-_AUTH_PATH_SUBSTRINGS = ("/saml2", "/saml", "/adfs/", "/oauth2/authorize",
-                         "/signin", "/sso", "/login")
+# Caminhos ESPECÍFICOS de fluxos de autenticação (evita falso-positivo: trechos
+# genéricos como "/login", "/sso", "/signin" foram removidos porque podem existir
+# em rotas legítimas do app e fariam o gravador/executor pular ações reais).
+_AUTH_PATH_SUBSTRINGS = ("/saml2", "/adfs/ls", "/oauth2/authorize",
+                         "/oauth2/v2.0/authorize", "/openid/connect/authorize")
 
 
 def is_auth_url(url: str) -> bool:

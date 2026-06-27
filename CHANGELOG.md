@@ -4,6 +4,27 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.6.0] - 2026-06-25
+
+### Corrigido (gravação de cliques)
+
+- **Cliques que mudam de página não se perdem mais**: são capturados no
+  `pointerdown` (antes da navegação descarregar a página), com de-duplicação.
+- **Detecção de página de login mais estrita** (somente provedores de identidade
+  e caminhos específicos de SSO). Antes, rotas do app cujo caminho contivesse
+  `login`/`sso`/`signin` eram tratadas como login, e o gravador/executor
+  **ignorava cliques e ações reais** nessas páginas.
+
+### Adicionado (modelo de revisão "o que fazer com cada passo")
+
+- A revisão agora lista **cada passo** (clique/tecla/preencher/selecionar) com um
+  **nome sugerido editável** e a opção **"O que fazer"**:
+  - Clique/Tecla: **"Repetir (normal)"** ou **"Clicar se aparecer (opcional)"** —
+    este último para **pop-ups/avaliações** que às vezes aparecem (na execução é
+    **pulado sem erro** se não estiver presente).
+  - Preencher/Selecionar: **"Fixo (repete o gravado)"**, "Fórmula" ou "Manual".
+- O log `.csv` de execução passa a usar o **nome do passo**.
+
 ## [1.5.2] - 2026-06-25
 
 ### Corrigido (auto-atualizador)

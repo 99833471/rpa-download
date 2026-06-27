@@ -99,6 +99,28 @@ def test_download_no_marker(pw, d):
         check("arquivo com timestamp", files[0].endswith(" - rel.csv"))
 
 
+def test_optional_step(pw, d):
+    print("== Passo opcional (pop-up que não apareceu) ==")
+    html = ('<input id="data" name="data">'
+            '<a id="dl" href="data:text/csv,a%0A1" download="rel.csv">Baixar</a>')
+    url = _url(d, "opt.html", html)
+    manifest = RobotManifest(name="t", start_url=url, steps=[
+        Step(action="goto", url=url),
+        # pop-up que NÃO existe nesta execução -> deve ser pulado sem erro
+        Step(action="click", name="Fechar avaliação", optional=True,
+             selectors=[Selector("id", "#popup-inexistente")]),
+        Step(action="click", selectors=[Selector("id", "#dl")]),
+    ])
+    dldir = os.path.join(d, "opt_out")
+    browser = pw.chromium.launch(headless=True)
+    page = browser.new_context(accept_downloads=True).new_page()
+    res = ExecutionEngine(page, manifest, dldir, action_timeout=2000).run()
+    browser.close()
+    files = os.listdir(dldir) if os.path.isdir(dldir) else []
+    check("execução OK mesmo sem o pop-up", res.ok)
+    check("baixou o arquivo após pular o opcional", len(files) == 1)
+
+
 def test_popup_evasion(pw, d):
     print("== Evasão de pop-up (clique interceptado) ==")
     html = (
@@ -160,6 +182,7 @@ def main():
     with tempfile.TemporaryDirectory() as d, sync_playwright() as pw:
         test_download(pw, d)
         test_download_no_marker(pw, d)
+        test_optional_step(pw, d)
         test_popup_evasion(pw, d)
         test_selector_fallback(pw, d)
         test_login_detection(pw, d)

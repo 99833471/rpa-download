@@ -159,7 +159,14 @@ class ExecutionEngine:
                 self._record(rec_index, step, "pulado", "página de login")
                 i += 1
                 continue
-            self.log(f"Passo {i}: {step.action} {step.label or step.url or ''}".strip())
+            self.log(f"Passo {i}: {step.action} {step.name or step.label or step.url or ''}".strip())
+            # Passo opcional (ex.: pop-up que às vezes aparece): falha rápido e é
+            # pulado sem erro se o elemento não estiver presente.
+            opt = bool(getattr(step, "optional", False))
+            prev = None
+            if opt:
+                prev = (self.action_timeout, self.max_attempts)
+                self.action_timeout, self.max_attempts = min(self.action_timeout, 3000), 1
             try:
                 if step.action == "goto":
                     self._goto(step)
@@ -174,9 +181,17 @@ class ExecutionEngine:
                 elif step.action == "download":
                     pass  # marcador antigo: download é capturado globalmente
             except ExecutionError as e:
+                if opt:
+                    self.action_timeout, self.max_attempts = prev
+                    self.log(f"Passo {rec_index}: opcional não encontrado — pulado")
+                    self._record(rec_index, step, "pulado", "opcional: " + str(e), overrides)
+                    i += 1
+                    continue
                 self._record(rec_index, step, "erro", str(e), overrides)
                 self.log(f"ERRO no passo {rec_index}: {e}")
                 return RunResult(False, str(e), downloads)
+            if opt:
+                self.action_timeout, self.max_attempts = prev
             self._record(rec_index, step, "ok", "", overrides)
             i += 1
 
@@ -230,7 +245,7 @@ class ExecutionEngine:
             "periodo": self._current_period,
             "passo": index,
             "acao": step.action,
-            "campo": step.label or step.url or "",
+            "campo": step.name or step.label or step.url or "",
             "seletor": step.selectors[0].value if step.selectors else "",
             "valor": self._value_for(step, overrides, index) if step.field else step.value,
             "status": status,

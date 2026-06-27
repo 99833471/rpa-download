@@ -40,7 +40,10 @@
     "onelogin.com", "pingidentity", "auth0.com", "accounts.google.com",
     "signin.aws", "fs.",
   ];
-  const AUTH_PATHS = ["/saml2", "/saml", "/adfs/", "/oauth2/authorize", "/signin", "/sso", "/login"];
+  // Caminhos ESPECÍFICOS (sem trechos genéricos como /login,/sso,/signin, que
+  // podem existir em rotas legítimas do app e fariam o gravador ignorar cliques).
+  const AUTH_PATHS = ["/saml2", "/adfs/ls", "/oauth2/authorize", "/oauth2/v2.0/authorize",
+                      "/openid/connect/authorize"];
   function onAuthPage() {
     try {
       const h = (location.hostname || "").toLowerCase();
@@ -229,28 +232,35 @@
   }
 
   // ------------------------------------------------------------- listeners
-  document.addEventListener(
-    "click",
-    (ev) => {
-      const el = ev.target;
-      if (!el || inToolbar(el) || onAuthPage()) return;
-      const tag = el.tagName ? el.tagName.toLowerCase() : "";
-      // Cliques em campos de texto viram foco; o valor é capturado depois.
-      if (FIELD_TAGS.has(tag) && tag !== "select") {
-        const t = (el.getAttribute("type") || "").toLowerCase();
-        if (!["button", "submit", "checkbox", "radio", "reset"].includes(t)) return;
-      }
-      // Captura o elemento clicável (botão/link), não o ícone/span interno.
-      const target = clickable(el);
-      send({
-        action: "click",
-        selectors: candidates(target),
-        tag: target.tagName ? target.tagName.toLowerCase() : tag,
-        label: labelFor(target),
-      });
-    },
-    true
-  );
+  const clickDedup = new WeakMap(); // evita gravar o mesmo clique 2x (pointerdown+click)
+
+  // Grava um clique. Chamado no 'pointerdown' (antes de uma navegação descarregar
+  // a página) E no 'click' (reserva), com de-duplicação por elemento.
+  function recordClick(el) {
+    if (!el || inToolbar(el) || onAuthPage()) return;
+    const tag = el.tagName ? el.tagName.toLowerCase() : "";
+    // Cliques em campos de texto viram foco; o valor é capturado depois.
+    if (FIELD_TAGS.has(tag) && tag !== "select") {
+      const t = (el.getAttribute("type") || "").toLowerCase();
+      if (!["button", "submit", "checkbox", "radio", "reset"].includes(t)) return;
+    }
+    const target = clickable(el); // botão/link, não o ícone/span interno
+    const now = Date.now();
+    const last = clickDedup.get(target);
+    if (last && now - last < 1200) return;
+    clickDedup.set(target, now);
+    send({
+      action: "click",
+      selectors: candidates(target),
+      tag: target.tagName ? target.tagName.toLowerCase() : tag,
+      label: labelFor(target),
+    });
+  }
+
+  // pointerdown dispara ANTES da navegação; garante o registro de cliques que
+  // trocam de página. 'click' fica como reserva (com de-dup).
+  document.addEventListener("pointerdown", (ev) => recordClick(ev.target), true);
+  document.addEventListener("click", (ev) => recordClick(ev.target), true);
 
   // Marca campos que receberam foco (para o snapshot ao concluir).
   document.addEventListener(

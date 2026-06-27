@@ -83,6 +83,8 @@ class Step:
     label: str = ""           # rótulo/aria-label/placeholder (ajuda na revisão)
     field: FieldConfig | None = None  # só para fill/select
     description: str = ""
+    name: str = ""            # nome amigável dado pelo usuário (organização/log)
+    optional: bool = False    # passo opcional (ex.: clique em pop-up que às vezes aparece)
 
     @classmethod
     def from_dict(cls, d):
@@ -95,6 +97,8 @@ class Step:
             label=d.get("label", ""),
             field=FieldConfig.from_dict(d.get("field")),
             description=d.get("description", ""),
+            name=d.get("name", ""),
+            optional=bool(d.get("optional", False)),
         )
 
 
