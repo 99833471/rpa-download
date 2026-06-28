@@ -47,7 +47,7 @@ def _dispatch_subprocess() -> None:
 
 def run_gui() -> int:
     from PySide6.QtGui import QIcon
-    from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
+    from PySide6.QtWidgets import QApplication
 
     from app import config
     from app.bootstrap import seed_if_empty
@@ -59,21 +59,23 @@ def run_gui() -> int:
     from app.ui.main_window import MainWindow
     from app.ui.theme import build_qss
 
+    # Auto-instalação: no .exe, copia-se para %LOCALAPPDATA%\Programs\RPA Download
+    # e reabre de lá (uma vez). Em validação/teste (RPA_NO_SHORTCUTS) não instala.
+    if getattr(sys, "frozen", False) and not os.environ.get("RPA_NO_SHORTCUTS"):
+        try:
+            from app.installer import ensure_installed
+            if ensure_installed():
+                return 0
+        except Exception:
+            pass
+
     app = QApplication(sys.argv)
     app.setApplicationName(config.APP_DISPLAY_NAME)
     app.setWindowIcon(QIcon(icon_path()))
 
-    data_root = config.get_data_root()
-    if data_root is None:
-        QMessageBox.information(
-            None, "Primeira execução",
-            "Selecione o diretório raiz onde a pasta\n"
-            f"“{config.APP_FOLDER_NAME}” será criada.",
-        )
-        parent = QFileDialog.getExistingDirectory(None, "Selecione o diretório raiz")
-        if not parent:
-            return 0
-        data_root = config.initialize_root(parent)
+    # Pasta de dados criada automaticamente no melhor local (sem admin); migra os
+    # dados de uma pasta antiga escolhida em versões anteriores, se houver.
+    data_root = config.ensure_data_root()
 
     db = Database(config.db_path(data_root))
     mirror = FolderMirror(db, data_root)

@@ -1,14 +1,17 @@
-"""Configuração da aplicação e gestão da primeira execução.
+"""Configuração da aplicação.
 
-O config.json (que aponta para o diretório raiz escolhido pelo usuário e o tema)
-fica em %LOCALAPPDATA%/RPADownload. Os dados em si (pastas espelhadas + banco)
-ficam dentro de "<raiz escolhida>/RPA-DOWNLOAD".
+O config.json (tema, preferências e o caminho da pasta de dados) fica em
+%LOCALAPPDATA%/RPADownload. A pasta de dados (banco, robôs, downloads, sessões) é
+criada **automaticamente** em %LOCALAPPDATA%/RPA Download — sem pedir caminho ao
+usuário e sem exigir admin; fora do OneDrive (evita locks). O .exe se instala em
+%LOCALAPPDATA%/Programs/RPA Download (ver app/installer.py).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import shutil
 
 APP_DISPLAY_NAME = "RPA Download"
 APP_FOLDER_NAME = "RPA-DOWNLOAD"
@@ -54,8 +57,61 @@ def get_data_root() -> str | None:
     return None
 
 
+def install_dir() -> str:
+    """Pasta de instalação do .exe (por usuário, sem admin)."""
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return os.path.join(base, "Programs", APP_DISPLAY_NAME)
+
+
+def default_data_root() -> str:
+    """Melhor local para a pasta de dados: sem admin e fora do OneDrive."""
+    override = os.environ.get("RPA_DATA_ROOT")  # usado em testes/validação
+    if override:
+        return override
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return os.path.join(base, APP_DISPLAY_NAME)
+
+
+def _same_path(a: str, b: str) -> bool:
+    return os.path.normcase(os.path.normpath(a)) == os.path.normcase(os.path.normpath(b))
+
+
+def _migrate_data(old: str, new: str) -> None:
+    """Move o conteúdo de uma pasta de dados antiga para a nova (best-effort)."""
+    try:
+        os.makedirs(new, exist_ok=True)
+        for entry in os.listdir(old):
+            src = os.path.join(old, entry)
+            dst = os.path.join(new, entry)
+            if os.path.exists(dst):
+                continue  # não sobrescreve o que já existe no destino
+            try:
+                shutil.move(src, dst)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+
+def ensure_data_root() -> str:
+    """Garante a pasta de dados no local padrão (criando-a) e a persiste. Se uma
+    versão anterior gravou um caminho diferente (escolhido pelo usuário), migra os
+    dados de lá para o novo local."""
+    default = default_data_root()
+    cfg = load_config()
+    old = cfg.get("data_root")
+    if old and os.path.isdir(old) and not _same_path(old, default):
+        _migrate_data(old, default)
+    os.makedirs(default, exist_ok=True)
+    if cfg.get("data_root") != default:
+        cfg["data_root"] = default
+        save_config(cfg)
+    return default
+
+
 def initialize_root(parent_dir: str) -> str:
-    """Cria a pasta da aplicação dentro de ``parent_dir`` e persiste no config."""
+    """Cria a pasta da aplicação dentro de ``parent_dir`` e persiste no config.
+    (Mantido por compatibilidade; o fluxo atual usa ``ensure_data_root``.)"""
     data_root = os.path.join(parent_dir, APP_FOLDER_NAME)
     os.makedirs(data_root, exist_ok=True)
     cfg = load_config()

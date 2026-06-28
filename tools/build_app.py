@@ -29,9 +29,12 @@ APP_DIR = os.path.join(DIST, APP_NAME)
 _LEIAME = """RPA DOWNLOAD
 
 COMO USAR
-1. Extraia esta pasta inteira para um local fixo (ex.: C:\\RPA-DOWNLOAD).
-2. Abra "RPA Download.exe".
-3. Na primeira vez, escolha uma pasta raiz onde os dados serao guardados.
+1. Abra "RPA Download.exe".
+2. Na 1a execucao o programa se instala sozinho (sem admin) em
+   %LOCALAPPDATA%\\Programs\\RPA Download, cria os atalhos (Documentos e Menu
+   Iniciar) e passa a rodar de la. Voce pode apagar esta pasta depois.
+3. A pasta de dados e criada automaticamente em %LOCALAPPDATA%\\RPA Download
+   (nao e preciso escolher caminho).
 
 Observacao: na primeira vez que um robo for executado, o navegador (Chromium)
 e baixado automaticamente (precisa de internet uma unica vez).

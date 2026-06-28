@@ -15,9 +15,16 @@ Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.exe`** na
 página de **[Releases](https://github.com/victoraalm/rpa-download/releases/latest)**
 e dê **duplo-clique**.
 
+**Instalação automática (sem admin):** na 1ª execução o programa se instala em
+`%LOCALAPPDATA%\Programs\RPA Download`, cria os atalhos (Documentos + Menu
+Iniciar, ficando **pesquisável**) e passa a rodar de lá — você pode apagar o `.exe`
+que baixou. **Não pede caminho**: a pasta de dados (banco, robôs, downloads,
+sessões) é criada automaticamente em `%LOCALAPPDATA%\RPA Download` (local, sem
+admin e fora do OneDrive), com o ícone do programa. Quem vinha de uma versão
+anterior tem os dados **migrados** automaticamente para esse local.
+
 Na primeira vez que um robô rodar, o navegador (Chromium) é baixado
-automaticamente (precisa de internet uma vez). Na 1ª execução o programa cria a
-pasta de dados **`RPA-DOWNLOAD`** no diretório que você escolher.
+automaticamente (precisa de internet uma vez).
 
 **Atualizar:** o próprio programa verifica e instala a versão mais recente —
 clique em **"🔄 Atualizar"** na barra superior (ele avisa quando há novidade).
@@ -71,10 +78,12 @@ python -m venv .venv
 
 Ou simplesmente dê **duplo-clique em `run.bat`**.
 
-Na **primeira execução** o programa pede um diretório raiz e cria dentro dele a
-pasta `RPA-DOWNLOAD`. A configuração (raiz escolhida + tema)
-fica em `%LOCALAPPDATA%\RPADownload\config.json`. O banco fica em
-`<raiz>\RPA-DOWNLOAD\.rpa\app.db`.
+A pasta de dados é criada **automaticamente** em `%LOCALAPPDATA%\RPA Download`
+(sem pedir caminho). A configuração (caminho dos dados + tema) fica em
+`%LOCALAPPDATA%\RPADownload\config.json` e o banco em
+`%LOCALAPPDATA%\RPA Download\.rpa\app.db`. Para apontar a pasta de dados para
+outro lugar (ex.: em testes), defina a variável de ambiente `RPA_DATA_ROOT`.
+A auto-instalação do `.exe` só ocorre no modo empacotado (não ao rodar por código).
 
 ## Manter sempre na versão mais recente
 

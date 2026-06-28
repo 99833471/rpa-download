@@ -4,6 +4,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.7.0] - 2026-06-28
+
+### Alterado (instalação como app profissional)
+
+- **Não pede mais o caminho na 1ª execução.** O programa cria a pasta de dados
+  automaticamente no melhor local, **sem admin** e **fora do OneDrive**:
+  `%LOCALAPPDATA%\RPA Download` (banco, robôs, downloads, sessões), com o **ícone
+  do programa** na pasta.
+- **Auto-instalação do executável**: na 1ª execução o `.exe` se copia para
+  `%LOCALAPPDATA%\Programs\RPA Download` e passa a rodar de lá (você pode apagar o
+  `.exe` baixado). Isso também deixa o **auto-atualizador mais confiável** (pasta
+  sempre gravável, ao contrário de Program Files).
+- **Migração automática**: quem tinha os dados num caminho escolhido em versões
+  anteriores tem o conteúdo **movido** para o novo local na primeira abertura.
+- Nova variável `RPA_DATA_ROOT` para apontar a pasta de dados (usada em testes).
+
 ## [1.6.3] - 2026-06-28
 
 ### Adicionado
