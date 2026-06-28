@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS screens (
     description TEXT DEFAULT '',
     position    INTEGER NOT NULL,
     folder_name TEXT NOT NULL,
-    is_home     INTEGER NOT NULL DEFAULT 0
+    is_home     INTEGER NOT NULL DEFAULT 0,
+    is_trash    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS blocks (
@@ -72,6 +73,10 @@ class Database:
         self._local = threading.local()
         with self.conn() as c:
             c.executescript(_SCHEMA)
+            # Migração: bancos antigos não têm a coluna is_trash.
+            cols = [r["name"] for r in c.execute("PRAGMA table_info(screens)").fetchall()]
+            if "is_trash" not in cols:
+                c.execute("ALTER TABLE screens ADD COLUMN is_trash INTEGER NOT NULL DEFAULT 0")
 
     # ------------------------------------------------------------------ infra
     def conn(self) -> sqlite3.Connection:
@@ -119,17 +124,23 @@ class Database:
         ).fetchone()
         return Screen.from_row(r) if r else None
 
+    def get_trash_screen(self) -> Screen | None:
+        r = self.conn().execute(
+            "SELECT * FROM screens WHERE is_trash = 1 ORDER BY position LIMIT 1"
+        ).fetchone()
+        return Screen.from_row(r) if r else None
+
     def screen_folder_names(self, exclude_id: int | None = None) -> set[str]:
         rows = self.conn().execute("SELECT id, folder_name FROM screens").fetchall()
         return {r["folder_name"] for r in rows if r["id"] != exclude_id}
 
-    def add_screen(self, name, description, folder_name, is_home=0) -> int:
+    def add_screen(self, name, description, folder_name, is_home=0, is_trash=0) -> int:
         with self.conn() as c:
             pos = c.execute("SELECT COALESCE(MAX(position), -1) + 1 AS p FROM screens").fetchone()["p"]
             cur = c.execute(
-                "INSERT INTO screens (name, description, position, folder_name, is_home) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (name, description, pos, folder_name, is_home),
+                "INSERT INTO screens (name, description, position, folder_name, is_home, is_trash) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (name, description, pos, folder_name, is_home, is_trash),
             )
             return cur.lastrowid
 

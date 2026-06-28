@@ -13,9 +13,11 @@ class Screen:
     position: int
     folder_name: str
     is_home: int
+    is_trash: int = 0
 
     @classmethod
     def from_row(cls, r) -> "Screen":
+        keys = r.keys()
         return cls(
             id=r["id"],
             name=r["name"],
@@ -23,6 +25,7 @@ class Screen:
             position=r["position"],
             folder_name=r["folder_name"],
             is_home=r["is_home"],
+            is_trash=(r["is_trash"] if "is_trash" in keys else 0),
         )
 
 

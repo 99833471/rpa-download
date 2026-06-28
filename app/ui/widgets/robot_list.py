@@ -22,6 +22,7 @@ _MAX_LABEL_LINES = 6
 class RobotList(QListWidget):
     # Ações do menu de contexto (carregam o robot_id):
     executeRequested = Signal(int)
+    interruptRequested = Signal(int)
     renameRequested = Signal(int)
     describeRequested = Signal(int)
     redoPathRequested = Signal(int)
@@ -40,6 +41,7 @@ class RobotList(QListWidget):
         super().__init__(parent)
         self.block_id = block_id
         self.theme_name = theme_name
+        self.running_robot_id = None  # robô em execução (destaque visual)
 
         self.setViewMode(QListWidget.IconMode)
         self.setFlow(QListWidget.LeftToRight)
@@ -77,11 +79,17 @@ class RobotList(QListWidget):
     # ------------------------------------------------------------- popular
     def add_robot(self, robot) -> None:
         self._ensure_icon_size(robot.size)
-        item = QListWidgetItem(make_robot_icon(robot.name, robot.size, self.theme_name), robot.name)
+        running = (self.running_robot_id == robot.id)
+        label = f"▶ {robot.name}" if running else robot.name
+        item = QListWidgetItem(make_robot_icon(robot.name, robot.size, self.theme_name), label)
         item.setData(ROBOT_ID_ROLE, robot.id)
-        tip = f"{robot.name}\n\n{robot.description}" if robot.description else robot.name
-        item.setToolTip(tip)
+        base_tip = f"{robot.name}\n\n{robot.description}" if robot.description else robot.name
+        item.setToolTip(("● Em execução…\n\n" + base_tip) if running else base_tip)
         item.setTextAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        if running:
+            f = item.font()
+            f.setBold(True)
+            item.setFont(f)
 
         # Altura da célula calculada para caber o NOME COMPLETO (quebrado em
         # linhas). Nomes muito longos limitam-se a algumas linhas + tooltip.
@@ -117,8 +125,13 @@ class RobotList(QListWidget):
             return
         robot_id = item.data(ROBOT_ID_ROLE)
         menu = QMenu(self)
-        menu.addAction("▶  Executar", lambda: self.executeRequested.emit(robot_id))
-        menu.addSeparator()
+        if self.running_robot_id == robot_id:
+            menu.addAction("⏹  Interromper execução",
+                           lambda: self.interruptRequested.emit(robot_id))
+            menu.addSeparator()
+        else:
+            menu.addAction("▶  Executar", lambda: self.executeRequested.emit(robot_id))
+            menu.addSeparator()
         menu.addAction("✎  Renomear", lambda: self.renameRequested.emit(robot_id))
         menu.addAction("📝  Adicionar descrição", lambda: self.describeRequested.emit(robot_id))
         menu.addAction("🎬  Refazer caminho", lambda: self.redoPathRequested.emit(robot_id))

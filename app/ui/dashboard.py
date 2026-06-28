@@ -149,6 +149,7 @@ class ScreenPage(QWidget):
         for block in blocks:
             bw = BlockWidget(block, self.dashboard.theme_name)
             self._wire_block(bw)
+            bw.robot_list.running_robot_id = self.dashboard._running_robot_id
             bw.populate(self.dashboard.db.list_robots(block.id))
             self.container.add_block_widget(bw)
 
@@ -164,6 +165,7 @@ class ScreenPage(QWidget):
 
         rl = bw.robot_list
         rl.executeRequested.connect(d.execute_robot)
+        rl.interruptRequested.connect(d.interrupt_robot)
         rl.renameRequested.connect(d.rename_robot)
         rl.describeRequested.connect(d.describe_robot)
         rl.redoPathRequested.connect(d.redo_robot_path)
@@ -189,8 +191,12 @@ class Dashboard(QWidget):
         self.recorder = RecordingController(db, mirror, self)
         self.recorder.recordingFinished.connect(self._on_recording_finished)
 
+        self._running_robot_id = None  # robô em execução (indicador visual)
+
         self.executor = ExecutionController(db, mirror, self)
         self.executor.statusMessage.connect(self._status)
+        self.executor.executionStarted.connect(self._on_exec_started)
+        self.executor.executionFinished.connect(self._on_exec_finished)
 
         self.exporter = ExportController(db, mirror, self)
         self.exporter.statusMessage.connect(self._status)
@@ -247,7 +253,8 @@ class Dashboard(QWidget):
         bar = self.tabs.tabBar()
         for screen in self.db.list_screens():
             page = ScreenPage(self, screen)
-            label = ("🏠 " if screen.is_home else "") + screen.name
+            prefix = "🏠 " if screen.is_home else ("🗑 " if screen.is_trash else "")
+            label = prefix + screen.name
             idx = self.tabs.addTab(page, label)
             bar.setTabData(idx, screen.id)
             self.tabs.setTabToolTip(idx, screen.description or screen.name)
@@ -285,7 +292,7 @@ class Dashboard(QWidget):
         menu = QMenu(self)
         menu.addAction("✎  Renomear tela", lambda: self.rename_screen(screen_id))
         menu.addAction("📝  Editar descrição", lambda: self.describe_screen(screen_id))
-        if not screen.is_home:
+        if not screen.is_home and not screen.is_trash:
             menu.addSeparator()
             menu.addAction("🗑  Excluir tela", lambda: self.delete_screen(screen_id))
         menu.exec(bar.mapToGlobal(pos))
@@ -332,7 +339,7 @@ class Dashboard(QWidget):
 
     def delete_screen(self, screen_id: int) -> None:
         screen = self.db.get_screen(screen_id)
-        if screen is None or screen.is_home:
+        if screen is None or screen.is_home or screen.is_trash:
             return
         if not dialogs.confirm(
             self, "Excluir tela",
@@ -485,16 +492,36 @@ class Dashboard(QWidget):
         self.db.update_robot(robot_id, size="small" if robot.size == "large" else "large")
         self._reload_screen_of_block(robot.block_id)
 
+    def _ensure_trash(self):
+        """Retorna a tela Lixeira, criando-a (e seu bloco/pastas) sob demanda."""
+        trash = self.db.get_trash_screen()
+        created = False
+        if trash is None:
+            folder = make_unique(sanitize_name("Lixeira"), self.db.screen_folder_names())
+            sid = self.db.add_screen(
+                "Lixeira", "Robôs aqui aguardam exclusão definitiva.", folder, is_trash=1)
+            self.mirror.ensure_dir(self.mirror.screen_dir(sid))
+            bfolder = make_unique(sanitize_name("Itens"), self.db.block_folder_names(sid))
+            bid = self.db.add_block(sid, "Itens", "Robôs aguardando exclusão.", bfolder)
+            self.mirror.ensure_dir(self.mirror.block_dir(bid))
+            trash = self.db.get_screen(sid)
+            created = True
+        return trash, created
+
     def delete_robot(self, robot_id: int) -> None:
         robot = self.db.get_robot(robot_id)
         if robot is None:
             return
+        if self._running_robot_id == robot_id:
+            dialogs.info(self, "Robô em execução",
+                         "Interrompa a execução antes de excluir este robô.")
+            return
         block = self.db.get_block(robot.block_id)
         screen = self.db.get_screen(block.screen_id)
-        home = self.db.get_home_screen()
+        trash = self.db.get_trash_screen()
 
-        if screen and home and screen.id == home.id:
-            # Já está na Home -> exclusão definitiva.
+        if screen and trash and screen.id == trash.id:
+            # Já está na Lixeira -> exclusão definitiva.
             if not dialogs.confirm(
                 self, "Excluir definitivamente",
                 f"Excluir permanentemente o robô “{robot.name}”?\n"
@@ -504,20 +531,25 @@ class Dashboard(QWidget):
             path = self.mirror.robot_dir(robot_id)
             self.db.delete_robot(robot_id)
             self.mirror.remove(path)
-            self.reload_screen(home.id)
+            self.reload_screen(trash.id)
             self._after_fs_change()
         else:
-            # Primeiro estágio: move para a Home antes da exclusão definitiva.
-            home_block = self.db.first_block_of_screen(home.id) if home else None
-            if home is None or home_block is None:
-                dialogs.info(self, "Home indisponível", "A tela Home não possui um bloco de destino.")
+            # Primeiro estágio: move para a Lixeira antes da exclusão definitiva.
+            if not dialogs.confirm(
+                self, "Mover para a Lixeira",
+                f"Mover o robô “{robot.name}” para a Lixeira?\n"
+                "Para excluí-lo de vez, apague-o novamente lá.",
+            ):
                 return
-            self.move_robot_to_block(robot_id, home_block.id)
-            dialogs.info(
-                self, "Movido para a Home",
-                f"O robô “{robot.name}” foi movido para a tela Home.\n"
-                "Para excluí-lo definitivamente, apague-o novamente lá.",
-            )
+            trash, created = self._ensure_trash()
+            tblock = self.db.first_block_of_screen(trash.id)
+            if tblock is None:
+                dialogs.info(self, "Lixeira indisponível", "A Lixeira não tem um bloco de destino.")
+                return
+            self.move_robot_to_block(robot_id, tblock.id)
+            if created:
+                self.reload_all()  # mostra a nova aba Lixeira
+            self._status(f"Robô “{robot.name}” movido para a Lixeira.")
 
     def move_robot_dialog(self, robot_id: int) -> None:
         robot = self.db.get_robot(robot_id)
@@ -556,6 +588,27 @@ class Dashboard(QWidget):
 
     def execute_robot(self, robot_id: int) -> None:
         self.executor.run(robot_id)
+
+    def interrupt_robot(self, robot_id: int) -> None:
+        robot = self.db.get_robot(robot_id)
+        name = robot.name if robot else "robô"
+        if dialogs.confirm(self, "Interromper execução",
+                           f"Interromper a execução do robô “{name}”?"):
+            self.executor.cancel()
+
+    def _on_exec_started(self, robot_id: int) -> None:
+        self._running_robot_id = robot_id
+        self._reload_robot_screen(robot_id)
+
+    def _on_exec_finished(self, robot_id: int, _ok: bool) -> None:
+        if self._running_robot_id == robot_id:
+            self._running_robot_id = None
+        self._reload_robot_screen(robot_id)
+
+    def _reload_robot_screen(self, robot_id: int) -> None:
+        robot = self.db.get_robot(robot_id)
+        if robot is not None:
+            self._reload_screen_of_block(robot.block_id)
 
     def redo_robot_path(self, robot_id: int) -> None:
         robot = self.db.get_robot(robot_id)

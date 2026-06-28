@@ -33,9 +33,15 @@ automaticamente — precisa de internet uma única vez.
 
 A tela principal organiza tudo em três níveis, espelhados em pastas no Windows:
 
-- **Telas** — abas no topo (ex.: "Geral").
-- **Blocos** — grupos dentro de uma Tela (ex.: "Principal").
+- **Telas** — abas no topo. Crie quantas quiser em **➕ Tela**.
+- **Blocos** — grupos dentro de uma Tela.
 - **Robôs** — cada robô é uma automação que baixa um dado específico.
+
+Telas especiais:
+- **🏠 Home** — criada na instalação; é a tela **padrão** (robôs sem uma tela
+  definida ficam aqui). Robôs criados dentro de outra tela permanecem nela.
+- **🗑 Lixeira** — aparece quando você exclui o primeiro robô; guarda os robôs
+  antes da exclusão definitiva (veja a seção 11).
 
 Use **arrastar e soltar** para reorganizar. O botão direito em cada item abre o
 menu de ações (renomear, mover, excluir, etc.).
@@ -110,15 +116,18 @@ As fórmulas são calculadas com segurança (sem executar código arbitrário).
 
 ## 6. Executar um robô
 
-1. Clique em **Executar** no robô (ou botão direito → Executar).
+1. **Duplo clique** no robô (ou botão direito → Executar).
 2. Por padrão o **navegador abre visível**, mostrando o passo a passo. Para rodar
    de forma invisível, desmarque **👁 Navegador visível** no topo.
 3. Se a **sessão expirou**, o programa avisa e abre a janela para você **logar de
    novo**; clique em "Já fiz login, continuar" e ele retoma.
-4. Se algum campo for **Manual**, abre uma janela (em tela cheia) para você
-   **preencher os valores** daquela execução.
+4. Se algum campo for **Manual**, abre uma janela para você **preencher os
+   valores** daquela execução.
 5. Os arquivos baixados vão para a pasta do robô. Acesse rápido pelo **botão
    direito → 📂 Abrir pasta de downloads**.
+
+Enquanto roda, o robô fica destacado com **▶ (em execução)**. Para parar, clique
+com o **botão direito → ⏹ Interromper execução**. (Só um robô roda por vez.)
 
 Cada execução gera um **log** (`.csv`) com o que aconteceu em cada passo — útil
 para entender uma eventual falha.
@@ -144,8 +153,8 @@ baixa o `.zip`, **troca a pasta inteira** sozinho (esperando ele fechar) e reabr
 
 - **Tema**: alterne entre **claro** e **escuro** no botão **Modo claro / Modo
   escuro**, no topo.
-- **Janelas em tela cheia**: a janela principal, o navegador de execução e a
-  janela de valores abrem **maximizados**.
+- **Janelas**: a janela principal e o navegador de execução abrem **maximizados**;
+  as janelas menores (revisão, valores) abrem num tamanho confortável.
 - **Antivírus/SmartScreen**: como o programa não é assinado digitalmente, pode
   haver um alerta de falso positivo. Em "Mais informações → Executar assim mesmo",
   ou adicione a pasta às exceções.
@@ -159,6 +168,20 @@ baixa o `.zip`, **troca a pasta inteira** sozinho (esperando ele fechar) e reabr
 - **"Pediu login de novo"**: a sessão expirou; basta logar na janela quando o
   programa pedir — ele salva a nova sessão.
 - **Primeira execução lenta**: é o download único do navegador (Chromium).
+
+---
+
+## 11. Excluir um robô (Lixeira)
+
+A exclusão é em **dois passos**, para evitar perdas acidentais:
+
+1. **Botão direito → 🗑 Deletar** move o robô para a tela **🗑 Lixeira** (criada
+   automaticamente na primeira vez).
+2. Dentro da **Lixeira**, **🗑 Deletar** de novo remove **definitivamente** (apaga a
+   pasta do robô, incluindo sessão/cache).
+
+Mudou de ideia? **Arraste** o robô da Lixeira de volta para a tela desejada. Um robô
+**em execução** não pode ser excluído — interrompa antes.
 
 ---
 

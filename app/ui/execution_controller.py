@@ -27,6 +27,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 
 class ExecutionController(QObject):
     statusMessage = Signal(str)
+    executionStarted = Signal(int)         # robot_id
     executionFinished = Signal(int, bool)  # robot_id, ok
 
     def __init__(self, db, mirror, parent_widget):
@@ -37,9 +38,23 @@ class ExecutionController(QObject):
         self.proc: QProcess | None = None
         self._ctx: dict | None = None
         self._buf = ""
+        self._cancelled = False
 
     def is_running(self) -> bool:
         return self.proc is not None
+
+    def running_robot_id(self) -> int | None:
+        return self._ctx.get("robot_id") if (self._ctx and self.proc is not None) else None
+
+    def cancel(self) -> None:
+        """Interrompe a execução em andamento (encerra o subprocesso)."""
+        if self.proc is not None:
+            self._cancelled = True
+            self.statusMessage.emit("Interrompendo execução…")
+            try:
+                self.proc.kill()
+            except Exception:  # noqa: BLE001
+                pass
 
     # ----------------------------------------------------------------- run
     def run(self, robot_id: int) -> None:
@@ -101,9 +116,11 @@ class ExecutionController(QObject):
 
         self._ctx = {"robot_id": robot_id, "name": robot.name, "tmp": tmp}
         self._buf = ""
+        self._cancelled = False
         self.proc = proc
         self.statusMessage.emit(f"Executando “{robot.name}”…")
         proc.start()
+        self.executionStarted.emit(robot_id)
 
     # --------------------------------------------------------- resolução
     def _resolve(self, manifest: RobotManifest):
@@ -192,10 +209,14 @@ class ExecutionController(QObject):
 
     def _on_finished(self, code, _status):
         ctx = self._ctx
+        cancelled = self._cancelled
+        self._cancelled = False
         self._reset()
         if ctx is None:
             return
-        if code == 0:
+        if cancelled:
+            self.statusMessage.emit(f"Execução de “{ctx['name']}” interrompida.")
+        elif code == 0:
             self.statusMessage.emit(f"Robô “{ctx['name']}” executado com sucesso.")
         elif code == 2:
             self.statusMessage.emit("Execução cancelada.")
@@ -203,7 +224,7 @@ class ExecutionController(QObject):
             self.statusMessage.emit(
                 f"Robô “{ctx['name']}” terminou com erro (ver log em runs/).")
         self._cleanup(ctx)
-        self.executionFinished.emit(ctx["robot_id"], code == 0)
+        self.executionFinished.emit(ctx["robot_id"], code == 0 and not cancelled)
 
     # ------------------------------------------------------------ helpers
     def _reset(self):

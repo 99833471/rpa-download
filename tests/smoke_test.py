@@ -54,13 +54,21 @@ def test_db_and_mirror(root):
     seed_if_empty(db, mirror)
 
     screens = db.list_screens()
-    check('seed criou 2 telas (Home + Geral)', len(screens) == 2)
+    check('seed criou só a Home', len(screens) == 1)
     check('existe tela Home', db.get_home_screen() is not None)
     check('pasta Home existe', os.path.isdir(os.path.join(root, 'Home')))
+
+    # Cria uma tela "Geral" + bloco "Principal" para o restante do teste.
+    gfolder = make_unique(sanitize_name('Geral'), db.screen_folder_names())
+    geral_id = db.add_screen('Geral', '', gfolder)
+    mirror.ensure_dir(mirror.screen_dir(geral_id))
+    pfolder = make_unique(sanitize_name('Principal'), db.block_folder_names(geral_id))
+    pblock_id = db.add_block(geral_id, 'Principal', '', pfolder)
+    mirror.ensure_dir(mirror.block_dir(pblock_id))
     check('pasta Geral/Principal existe', os.path.isdir(os.path.join(root, 'Geral', 'Principal')))
 
     # Cria um robô e confere a pasta física.
-    geral = next(s for s in screens if s.name == 'Geral')
+    geral = db.get_screen(geral_id)
     block = db.first_block_of_screen(geral.id)
     folder = make_unique(sanitize_name('Robô Custos'), db.robot_folder_names(block.id))
     rid = db.add_robot(block.id, 'Robô Custos', '', folder)
@@ -85,8 +93,8 @@ def test_db_and_mirror(root):
     rfolder = make_unique(db.get_robot(rid).folder_name, db.robot_folder_names(home_block.id))
     db.move_robot(rid, home_block.id, rfolder)
     mirror.move(old_robot_dir, mirror.robot_dir(rid))
-    check('robô movido para Home/Recebidos',
-          os.path.isdir(os.path.join(root, 'Home', 'Recebidos', 'Robô Custos')))
+    check('robô movido para a Home',
+          os.path.isdir(os.path.join(root, 'Home', home_block.folder_name, 'Robô Custos')))
 
     # Fila de retentativas: processa fila vazia sem erro.
     check('process_pending roda sem erro', mirror.process_pending() == 0)

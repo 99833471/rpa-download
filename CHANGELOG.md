@@ -4,6 +4,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.9.1] - 2026-06-28
+
+### Home, Lixeira e execução
+
+- **Tela Home repensada**: deixa de ser "lixeira". Agora é a **tela padrão** (robôs
+  sem uma tela definida ficam nela); robôs criados dentro de outra tela permanecem
+  nela. Na instalação, **só a Home** é criada.
+- **Lixeira separada (🗑)**: excluir um robô agora o move para a **Lixeira** (criada
+  sob demanda). Excluir de novo **lá dentro** remove definitivamente. Dá para
+  arrastar de volta. (Bancos antigos: o texto da Home é corrigido automaticamente.)
+- **Interromper execução**: botão direito num robô em execução → **⏹ Interromper**.
+- **Indicador visual**: o robô em execução aparece destacado com **▶**.
+- Um robô **em execução** não pode ser excluído (peça para interromper antes).
+
 ## [1.9.0] - 2026-06-28
 
 ### Fórmulas (muito ampliadas)
