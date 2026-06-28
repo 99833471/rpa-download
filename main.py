@@ -69,6 +69,15 @@ def run_gui() -> int:
         except Exception:
             pass
 
+    # Limpa sobras _MEI* de execuções anteriores que foram mortas/travadas
+    # (só remove as nossas e que não estão em uso).
+    if getattr(sys, "frozen", False):
+        try:
+            from app.installer import cleanup_stale_runtime_dirs
+            cleanup_stale_runtime_dirs()
+        except Exception:
+            pass
+
     app = QApplication(sys.argv)
     app.setApplicationName(config.APP_DISPLAY_NAME)
     app.setWindowIcon(QIcon(icon_path()))

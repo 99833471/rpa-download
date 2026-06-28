@@ -4,6 +4,19 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.7.2] - 2026-06-28
+
+### Corrigido (sobras de pasta temporária `_MEI*`)
+
+- O executável (PyInstaller onefile) extrai-se numa pasta `_MEI*` em `%TEMP%` a cada
+  execução e a **remove ao sair normalmente**; porém, se o processo for **morto ou
+  travar** (ex.: o updater antigo travado, fechar pelo Gerenciador de Tarefas, ou
+  cancelar no meio), a pasta ficava para trás ocupando espaço.
+- Agora, ao iniciar, o programa **limpa as sobras `_MEI*` dele mesmo**, de forma
+  segura: só remove as que têm o seu marcador e que **não estão em uso** (tenta
+  renomear antes de apagar — uma pasta em uso não pode ser renomeada no Windows).
+  Pastas de **outros** programas PyInstaller não são tocadas.
+
 ## [1.7.1] - 2026-06-28
 
 ### Corrigido (auto-atualizador travando)
