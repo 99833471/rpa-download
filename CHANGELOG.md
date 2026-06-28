@@ -4,6 +4,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.6.2] - 2026-06-28
+
+### Alterado
+
+- **Remoção de menções de marca**: nomes/descrições dos temas, metadados do
+  executável e a documentação não fazem mais referência a empresas específicas.
+  Os temas passam a ser descritos por cor (claro: azul/branco; escuro:
+  preto/dourado). Sem mudança de comportamento.
+
 ## [1.6.1] - 2026-06-25
 
 ### Adicionado
@@ -214,7 +223,7 @@ Primeira versão completa — todas as 5 fases implementadas e cobertas por test
   - Estrutura visual (Telas → Blocos → Robôs) espelhada em pastas físicas no Windows.
   - Higienização de nomes inválidos e deduplicação automática.
   - Fila de retentativas para operações de pasta bloqueadas (arquivo em uso).
-  - Dashboard em PySide6 com temas Light (Ambev) e Dark (AB InBev).
+  - Dashboard em PySide6 com temas claro e escuro.
   - Drag-and-drop de Telas, Blocos e Robôs; Tela Home como destino pré-exclusão.
 - **Gravação ("Aprender")**
   - Gravador baseado em Playwright (subprocesso) com mapeamento por DOM

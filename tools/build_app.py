@@ -73,7 +73,7 @@ VSVersionInfo(
     mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
   kids=[
     StringFileInfo([StringTable('040904B0', [
-      StringStruct('CompanyName', 'Anheuser-Busch InBev'),
+      StringStruct('CompanyName', 'RPA Download'),
       StringStruct('FileDescription', 'RPA Download - automatizador de downloads'),
       StringStruct('FileVersion', '{version}'),
       StringStruct('InternalName', 'RPA Download'),

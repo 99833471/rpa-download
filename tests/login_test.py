@@ -33,9 +33,9 @@ def main():
     # Detecção ESTRITA: trechos genéricos no caminho (login/sso/signin) NÃO contam
     # como login — senão o gravador/executor pularia ações reais do app.
     notauth = [
-        "https://wmst1.ambev.com.br/wmsnew#",
-        "https://wmst1.ambev.com.br/wmsnew/multiple-realms",
-        "https://wmst1.ambev.com.br/wmsnew/sso-config",
+        "https://wms.exemplo.com.br/wmsnew#",
+        "https://wms.exemplo.com.br/wmsnew/multiple-realms",
+        "https://wms.exemplo.com.br/wmsnew/sso-config",
         "https://app.com/login-page",
         "https://app.com/relatorios/signin-history",
         "https://app.com/dados?ini=01/06/2026",

@@ -116,8 +116,8 @@ Fluxo recomendado no dia a dia: **`atualizar.bat`** (atualiza) → **`run.bat`**
   falhar por bloqueio do Windows (arquivo em uso), ela é registrada em
   `pending_ops` e repetida em background (`RetryWorker`) e na próxima
   inicialização — o programa **não trava**.
-- **Dashboard com temas**: Light (azul/branco, Ambev) e Dark (preto/dourado,
-  AB InBev), alternáveis no topo.
+- **Dashboard com temas**: Light (azul/branco) e Dark (preto/dourado),
+  alternáveis no topo.
 - **Telas (abas)**: criar, renomear, descrição, excluir e **reordenar por
   arrastar**. A Tela `Home` é especial (não pode ser excluída) e é o destino de
   robôs deletados antes da exclusão definitiva.

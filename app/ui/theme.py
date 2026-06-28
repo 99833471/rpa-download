@@ -1,7 +1,7 @@
 """Temas Light/Dark e geração de ícones de robô.
 
-- Light Mode: azul e branco (inspiração Ambev).
-- Dark Mode:  preto e dourado (inspiração AB InBev).
+- Light Mode: azul e branco.
+- Dark Mode:  preto e dourado.
 """
 
 from __future__ import annotations
