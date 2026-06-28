@@ -32,7 +32,12 @@ def installed_exe() -> str:
 
 
 def ensure_installed() -> bool:
-    """Se estiver rodando fora do local canônico, copia-se para lá e reabre.
+    """Se estiver rodando fora do local canônico, copia a PASTA do app para lá e
+    reabre de lá.
+
+    A distribuição é em **modo pasta** (onedir): "o programa" é a pasta que contém
+    o .exe + `_internal`. Copiamos a pasta inteira para
+    %LOCALAPPDATA%\\Programs\\RPA Download e reabrimos o .exe instalado.
 
     Retorna True quando reabriu a cópia instalada (o chamador deve encerrar este
     processo); False quando já está instalado ou não há o que fazer.
@@ -43,25 +48,24 @@ def ensure_installed() -> bool:
         return False
 
     try:
-        current = os.path.realpath(sys.executable)
-        target = os.path.realpath(installed_exe())
+        current_exe = os.path.realpath(sys.executable)
+        current_dir = os.path.dirname(current_exe)
+        target_dir = os.path.realpath(config.install_dir())
+        target_exe = os.path.join(target_dir, os.path.basename(current_exe))
     except OSError:
         return False
-    if _same(current, target):
+    if _same(current_dir, target_dir):
         return False  # já está rodando do local instalado
 
     try:
-        os.makedirs(os.path.dirname(target), exist_ok=True)
-        # cópia em duas etapas (tmp + replace) para não deixar um .exe parcial
-        tmp = target + ".new"
-        shutil.copy2(current, tmp)
-        os.replace(tmp, target)
+        os.makedirs(os.path.dirname(target_dir), exist_ok=True)
+        shutil.copytree(current_dir, target_dir, dirs_exist_ok=True)
     except OSError:
-        return False  # não conseguiu instalar → roda no lugar
+        return False  # não conseguiu instalar (ex.: arquivo em uso) → roda no lugar
 
     try:
         subprocess.Popen(
-            [target],
+            [target_exe],
             creationflags=_DETACHED_PROCESS | _CREATE_NEW_PROCESS_GROUP,
             close_fds=True,
         )
@@ -109,10 +113,20 @@ def purge_stale_runtime_dirs(parent: str, current: str) -> int:
 
 
 def cleanup_stale_runtime_dirs() -> int:
-    """Limpa sobras `_MEI*` no diretório de extração (faz sentido só no .exe)."""
+    """Limpa sobras `_MEI*` deixadas por execuções anteriores.
+
+    Varre o diretório de extração atual e também o `%TEMP%` (onde o antigo modo
+    onefile extraía), para remover sobras herdadas. Só no .exe; best-effort.
+    """
     if not getattr(sys, "frozen", False):
         return 0
-    base = getattr(sys, "_MEIPASS", None)
-    if not base:
-        return 0
-    return purge_stale_runtime_dirs(os.path.dirname(base), base)
+    import tempfile
+    base = getattr(sys, "_MEIPASS", "") or ""
+    parents = set()
+    if base:
+        parents.add(os.path.dirname(base))
+    parents.add(tempfile.gettempdir())
+    removed = 0
+    for parent in parents:
+        removed += purge_stale_runtime_dirs(parent, base)
+    return removed

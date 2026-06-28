@@ -29,12 +29,16 @@ APP_DIR = os.path.join(DIST, APP_NAME)
 _LEIAME = """RPA DOWNLOAD
 
 COMO USAR
-1. Abra "RPA Download.exe".
-2. Na 1a execucao o programa se instala sozinho (sem admin) em
+1. Extraia este .zip (clique direito > Extrair tudo). NAO rode de dentro do zip.
+2. Abra "RPA Download.exe" (dentro da pasta extraida).
+3. Na 1a execucao o programa se instala sozinho (sem admin) em
    %LOCALAPPDATA%\\Programs\\RPA Download, cria os atalhos (Documentos e Menu
-   Iniciar) e passa a rodar de la. Voce pode apagar esta pasta depois.
-3. A pasta de dados e criada automaticamente em %LOCALAPPDATA%\\RPA Download
+   Iniciar) e passa a rodar de la. Voce pode apagar a pasta extraida depois.
+4. A pasta de dados e criada automaticamente em %LOCALAPPDATA%\\RPA Download
    (nao e preciso escolher caminho).
+
+Atualizacao: pelo proprio programa (botao "Atualizar"), que baixa o .zip novo e
+troca a pasta sozinho.
 
 Observacao: na primeira vez que um robo for executado, o navegador (Chromium)
 e baixado automaticamente (precisa de internet uma unica vez).
@@ -164,6 +168,9 @@ def package() -> int:
 def main() -> int:
     if "--repack" in sys.argv:
         return package()
+    if "--zip-only" in sys.argv:  # distribuição principal: pasta (onedir) + .zip
+        rc = build()
+        return rc if rc != 0 else package()
     if "--onefile-only" in sys.argv:
         return build_onefile()
     rc = build()

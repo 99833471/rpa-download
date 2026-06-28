@@ -4,6 +4,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.8.0] - 2026-06-28
+
+### Alterado (distribuição em .zip / modo pasta)
+
+- A distribuição passa a ser um **`.zip` (modo pasta)** em vez de um `.exe` único.
+  **Ganhos:** abertura **muito mais rápida** (sem extrair ~85 MB a cada execução),
+  **fim das sobras `_MEI*`** e **menos alarme de antivírus**. **Custo:** é preciso
+  **extrair o `.zip`** antes de abrir o `RPA Download.exe` da pasta.
+- **Auto-instalação adaptada**: na 1ª execução o programa copia a **pasta inteira**
+  para `%LOCALAPPDATA%\Programs\RPA Download` e passa a rodar de lá.
+- **Auto-update adaptado**: o botão **"🔄 Atualizar"** agora baixa o **`.zip`**,
+  extrai e **substitui a pasta inteira** (esperando por PID, oculto), e reabre.
+- A limpeza de sobras `_MEI*` agora varre também o `%TEMP%` (remove o que o antigo
+  modo onefile possa ter deixado).
+
+> ⚠️ **Transição:** instalações em `.exe` único (≤ 1.7.2) têm um atualizador que
+> procura um `.exe`. **Baixe o `RPA-DOWNLOAD.zip` da 1.8.0 manualmente uma vez**;
+> a partir dela o auto-update (.zip → .zip) funciona sozinho.
+
 ## [1.7.2] - 2026-06-28
 
 ### Corrigido (sobras de pasta temporária `_MEI*`)

@@ -16,7 +16,7 @@ import urllib.request
 from PySide6.QtCore import QObject, QThread, Signal
 from PySide6.QtWidgets import QApplication, QProgressDialog
 
-from .. import updater
+from .. import config, updater
 from . import dialogs
 
 _CREATE_NO_WINDOW = 0x08000000  # processo sem janela de console
@@ -46,6 +46,40 @@ def build_update_script(pid: int, new_exe: str, target_exe: str, self_path: str 
         "Start-Sleep -Milliseconds 500\r\n"
         "for($j=0;$j -lt 25;$j++){ try{ Copy-Item -LiteralPath $new -Destination $target -Force -ErrorAction Stop; break } catch { Start-Sleep -Milliseconds 400 } }\r\n"
         "Start-Process -FilePath $target\r\n"
+        + self_del
+    )
+
+
+def build_update_zip_script(pid: int, zip_path: str, extract_dir: str, target_dir: str,
+                            exe: str, app_folder: str, self_path: str = "") -> str:
+    """Gera o script PowerShell que troca a PASTA inteira do app (distribuição .zip).
+
+    Espera **por PID** terminar, extrai o .zip num diretório temporário, **substitui
+    a pasta instalada** pela nova (remove a antiga e copia; cai para mesclagem se a
+    remoção falhar) e reabre o app. Roda oculto.
+    """
+    self_del = (f"Remove-Item -LiteralPath {_ps_quote(self_path)} -Force -ErrorAction SilentlyContinue\r\n"
+                if self_path else "")
+    return (
+        "$ErrorActionPreference='SilentlyContinue'\r\n"
+        f"$procId={int(pid)}\r\n"
+        f"$zip={_ps_quote(zip_path)}\r\n"
+        f"$extract={_ps_quote(extract_dir)}\r\n"
+        f"$target={_ps_quote(target_dir)}\r\n"
+        f"$exe={_ps_quote(exe)}\r\n"
+        f"$appFolder={_ps_quote(app_folder)}\r\n"
+        "for($i=0;$i -lt 150;$i++){ if(-not (Get-Process -Id $procId -ErrorAction SilentlyContinue)){break}; Start-Sleep -Milliseconds 400 }\r\n"
+        "Start-Sleep -Milliseconds 600\r\n"
+        "Remove-Item -Recurse -Force $extract -ErrorAction SilentlyContinue\r\n"
+        "Expand-Archive -LiteralPath $zip -DestinationPath $extract -Force\r\n"
+        "$src = Join-Path $extract $appFolder\r\n"
+        "if(-not (Test-Path $src)){ $src = $extract }\r\n"
+        "for($j=0;$j -lt 25;$j++){ try{ if(Test-Path $target){ Remove-Item -Recurse -Force $target -ErrorAction Stop }; break } catch { Start-Sleep -Milliseconds 400 } }\r\n"
+        "New-Item -ItemType Directory -Force -Path $target | Out-Null\r\n"
+        "Copy-Item -Path (Join-Path $src '*') -Destination $target -Recurse -Force\r\n"
+        "Start-Process -FilePath $exe\r\n"
+        "Remove-Item -Recurse -Force $extract -ErrorAction SilentlyContinue\r\n"
+        "Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue\r\n"
         + self_del
     )
 
@@ -139,14 +173,15 @@ class UpdateController(QObject):
                          "Você está rodando pelo código-fonte.\n"
                          "Atualize com “git pull” ou o atalho “atualizar.bat”.")
             return
-        if not info["asset_url"] or not info["asset_name"].lower().endswith(".exe"):
+        if not info["asset_url"] or not info["asset_name"].lower().endswith((".zip", ".exe")):
             dialogs.info(self.parent, "Atualização",
-                         "A release mais recente não tem um .exe para baixar.")
+                         "A release mais recente não tem um pacote (.zip) para baixar.")
             return
         self._start_download(info)
 
     def _start_download(self, info):
-        dest = os.path.join(tempfile.gettempdir(), "RPA-DOWNLOAD.update.exe")
+        ext = ".zip" if info.get("asset_name", "").lower().endswith(".zip") else ".exe"
+        dest = os.path.join(tempfile.gettempdir(), "RPA-DOWNLOAD.update" + ext)
         self._dlg = QProgressDialog("Baixando atualização…", "Cancelar", 0, 100, self.parent)
         self._dlg.setWindowTitle("Atualizando")
         self._dlg.setAutoClose(False)
@@ -167,10 +202,17 @@ class UpdateController(QObject):
             return
         self._apply(path)
 
-    def _apply(self, new_exe):
+    def _apply(self, new_path):
         exe = sys.executable
         script = os.path.join(tempfile.gettempdir(), "rpa_update.ps1")
-        content = build_update_script(os.getpid(), new_exe, exe, script)
+        if new_path.lower().endswith(".zip"):
+            # Distribuição em pasta: troca a pasta inteira do app.
+            app_dir = os.path.dirname(exe)
+            extract = os.path.join(tempfile.gettempdir(), "rpa_update_extract")
+            content = build_update_zip_script(os.getpid(), new_path, extract, app_dir,
+                                              exe, config.APP_DISPLAY_NAME, script)
+        else:
+            content = build_update_script(os.getpid(), new_path, exe, script)
         try:
             with open(script, "w", encoding="utf-8") as f:
                 f.write(content)

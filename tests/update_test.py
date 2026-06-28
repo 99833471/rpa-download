@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from app import updater  # noqa: E402
-from app.ui.update_controller import build_update_script  # noqa: E402
+from app.ui.update_controller import build_update_script, build_update_zip_script  # noqa: E402
 
 _failures = []
 
@@ -41,6 +41,17 @@ def main():
     check("reabre o app", "Start-Process -FilePath $target" in ps)
     check("autoexclui o script", "Remove-Item -LiteralPath" in ps and "rpa_update.ps1" in ps)
     check("alvo e origem citados (com aspas seguras)", "'C:\\App\\RPA Download.exe'" in ps and "'C:\\Temp\\new.exe'" in ps)
+
+    print("== Script de troca por .zip (modo pasta) ==")
+    zp = build_update_zip_script(777, r"C:\Temp\u.zip", r"C:\Temp\ext",
+                                 r"C:\App\RPA Download", r"C:\App\RPA Download\RPA Download.exe",
+                                 "RPA Download", r"C:\Temp\rpa_update.ps1")
+    check("espera por PID", "$procId=777" in zp and "Get-Process -Id $procId" in zp)
+    check("extrai o .zip", "Expand-Archive" in zp)
+    check("localiza a pasta do app no zip", "$src = Join-Path $extract $appFolder" in zp)
+    check("substitui a pasta alvo (remove + copia)", "Remove-Item -Recurse -Force $target" in zp and "Copy-Item -Path (Join-Path $src '*') -Destination $target" in zp)
+    check("reabre o app", "Start-Process -FilePath $exe" in zp)
+    check("limpa o zip e a extração", "Remove-Item -LiteralPath $zip" in zp and "Remove-Item -Recurse -Force $extract" in zp)
 
     print()
     if _failures:

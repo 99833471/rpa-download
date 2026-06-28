@@ -29,8 +29,9 @@ def fetch_latest(timeout: float = 8.0) -> dict | None:
     except Exception:
         return None
     assets = data.get("assets", []) or []
-    exe = next((a for a in assets if a.get("name", "").lower().endswith(".exe")), None)
-    chosen = exe or next((a for a in assets if a.get("name", "").lower().endswith(".zip")), None)
+    # Distribuição em .zip (modo pasta). Mantém fallback p/ .exe (compatibilidade).
+    zip_ = next((a for a in assets if a.get("name", "").lower().endswith(".zip")), None)
+    chosen = zip_ or next((a for a in assets if a.get("name", "").lower().endswith(".exe")), None)
     return {
         "tag": data.get("tag_name", ""),
         "title": data.get("name", ""),

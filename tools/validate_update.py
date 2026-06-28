@@ -4,8 +4,8 @@ app instalado:
      (99833471, que deve redirecionar) — prova que instalações antigas atualizam.
   2. Comparação de versões (is_newer).
   3. O asset publicado é um .exe válido (cabeçalho MZ) e tem tamanho.
-  4. Mecanismo de troca do .exe (o .bat) num sandbox isolado: espera o processo
-     fechar -> move o novo sobre o antigo -> reabre -> se autoexclui.
+  4. Mecanismo de troca da PASTA (via .zip) num sandbox isolado: espera o processo
+     fechar (por PID) -> extrai o .zip -> substitui a pasta -> reabre -> autoexclui.
 
 Uso:  python tools/validate_update.py
 """
@@ -23,7 +23,7 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import updater  # noqa: E402
-from app.ui.update_controller import build_update_script  # noqa: E402
+from app.ui.update_controller import build_update_zip_script  # noqa: E402
 
 _failures = []
 
@@ -83,56 +83,66 @@ def test_asset(new):
 
 
 def test_replace_mechanism():
-    print("== Troca do .exe (sandbox isolado, espera por PID) ==")
-    import filecmp
+    print("== Troca da pasta via .zip (sandbox isolado, espera por PID) ==")
     ping = shutil.which("ping") or r"C:\Windows\System32\ping.exe"
     other = shutil.which("hostname") or r"C:\Windows\System32\hostname.exe"
     sandbox = tempfile.mkdtemp(prefix="rpa_upd_")
-    target = os.path.join(sandbox, "target.exe")   # 'app instalado'
-    newexe = os.path.join(sandbox, "new.exe")       # 'atualização baixada' (binário diferente)
-    shutil.copyfile(ping, target)
-    shutil.copyfile(other, newexe)
-    orig_size = os.path.getsize(target)
 
-    # processo 'rodando' a partir do alvo; o script deve esperar ESTE PID fechar.
-    blocker = subprocess.Popen([target, "-n", "600", "127.0.0.1"],
+    # 'app instalado' (pasta) com um arquivo obsoleto que deve sumir na troca.
+    installed = os.path.join(sandbox, "installed")
+    os.makedirs(installed)
+    inst_exe = os.path.join(installed, "RPA Download.exe")
+    shutil.copyfile(ping, inst_exe)
+    with open(os.path.join(installed, "old.txt"), "w") as f:
+        f.write("OLD")
+
+    # nova versão: pasta "RPA Download" compactada num .zip (como a release).
+    newsrc = os.path.join(sandbox, "newsrc")
+    newapp = os.path.join(newsrc, "RPA Download")
+    os.makedirs(newapp)
+    shutil.copyfile(other, os.path.join(newapp, "RPA Download.exe"))
+    with open(os.path.join(newapp, "marker.txt"), "w") as f:
+        f.write("NEW")
+    zip_path = shutil.make_archive(os.path.join(sandbox, "update"), "zip", newsrc, "RPA Download")
+
+    # processo 'rodando' a partir da pasta instalada — segura a pasta por PID.
+    blocker = subprocess.Popen([inst_exe, "-n", "600", "127.0.0.1"],
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                stdin=subprocess.DEVNULL)
+    extract = os.path.join(sandbox, "extract")
     script = os.path.join(sandbox, "upd.ps1")
     with open(script, "w", encoding="utf-8") as f:
-        f.write(build_update_script(blocker.pid, newexe, target, script))
+        f.write(build_update_zip_script(blocker.pid, zip_path, extract, installed,
+                                        inst_exe, "RPA Download", script))
 
     subprocess.Popen(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
                       "-WindowStyle", "Hidden", "-File", script],
                      creationflags=0x08000000 | subprocess.CREATE_NEW_PROCESS_GROUP,  # CREATE_NO_WINDOW
                      close_fds=True)
+    marker = os.path.join(installed, "marker.txt")
+    old = os.path.join(installed, "old.txt")
     time.sleep(2.0)  # script deve estar esperando o PID (ainda não trocou)
-    waiting_ok = (os.path.exists(target) and os.path.getsize(target) == orig_size)
+    waiting_ok = (os.path.exists(old) and not os.path.exists(marker))
     blocker.terminate()
     try:
         blocker.wait(timeout=5)
     except subprocess.TimeoutExpired:
         blocker.kill()
 
-    deadline = time.time() + 40
+    deadline = time.time() + 50
     replaced = False
     while time.time() < deadline:
-        if os.path.exists(target) and filecmp.cmp(target, newexe, shallow=False) and not os.path.exists(script):
+        if os.path.exists(marker) and not os.path.exists(old) and not os.path.exists(script):
             replaced = True
             break
         time.sleep(0.5)
 
     check("esperou enquanto o app estava aberto (não trocou cedo)", waiting_ok)
-    check("substituiu o executável pelo novo (conteúdo confere)", replaced)
-    check("executável final existe", os.path.exists(target))
+    check("substituiu a pasta pela nova versão (marker presente)", os.path.exists(marker))
+    check("removeu arquivos obsoletos da versão antiga (old.txt sumiu)", not os.path.exists(old))
     check("o script se autoexcluiu", not os.path.exists(script))
 
-    try:
-        subprocess.run(["taskkill", "/IM", "target.exe", "/F", "/T"],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        pass
-    time.sleep(0.5)
+    time.sleep(0.8)  # o 'app reaberto' (hostname) sai sozinho; libera o handle
     shutil.rmtree(sandbox, ignore_errors=True)
 
 

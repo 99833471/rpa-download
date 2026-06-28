@@ -11,14 +11,15 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 
 ## ⬇️ Usar o programa pronto (sem instalar Python)
 
-Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.exe`** na
-página de **[Releases](https://github.com/victoraalm/rpa-download/releases/latest)**
-e dê **duplo-clique**.
+Quem só quer **usar** não precisa de Python: baixe o **`RPA-DOWNLOAD.zip`** na
+página de **[Releases](https://github.com/victoraalm/rpa-download/releases/latest)**,
+**extraia** (clique direito → Extrair tudo) e abra o **`RPA Download.exe`** dentro
+da pasta. (Não rode de dentro do zip.)
 
 **Instalação automática (sem admin):** na 1ª execução o programa se instala em
 `%LOCALAPPDATA%\Programs\RPA Download`, cria os atalhos (Documentos + Menu
-Iniciar, ficando **pesquisável**) e passa a rodar de lá — você pode apagar o `.exe`
-que baixou. **Não pede caminho**: a pasta de dados (banco, robôs, downloads,
+Iniciar, ficando **pesquisável**) e passa a rodar de lá — você pode apagar a pasta
+que extraiu. **Não pede caminho**: a pasta de dados (banco, robôs, downloads,
 sessões) é criada automaticamente em `%LOCALAPPDATA%\RPA Download` (local, sem
 admin e fora do OneDrive), com o ícone do programa. Quem vinha de uma versão
 anterior tem os dados **migrados** automaticamente para esse local.
