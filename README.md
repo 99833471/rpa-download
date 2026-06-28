@@ -278,3 +278,15 @@ Todas as 5 fases estão implementadas e cobertas por testes:
 - Estratégia de **paginação** para limites (hoje o foco é particionar por data).
 - Histórico de execuções com painel na UI (hoje há log por execução em `runs/`).
 - Marcação de um "indicador de login" para detecção de sessão mais precisa.
+
+---
+
+## Licença
+
+**Software proprietário — todos os direitos reservados.** Veja o arquivo
+[`LICENSE`](LICENSE) para os termos completos.
+
+Copyright (c) 2026 Victor Alves do Amaral Leme Matias. Apesar de o repositório ser
+público, **nenhuma licença de uso é concedida**: usar, copiar, modificar,
+redistribuir ou fazer engenharia reversa exige autorização **prévia e por escrito**
+do titular. Para permissões: victoraalm@outlook.com.

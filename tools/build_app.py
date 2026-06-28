@@ -74,6 +74,7 @@ VSVersionInfo(
   kids=[
     StringFileInfo([StringTable('040904B0', [
       StringStruct('CompanyName', 'RPA Download'),
+      StringStruct('LegalCopyright', 'Copyright (c) 2026 Victor Alves do Amaral Leme Matias. Todos os direitos reservados. Licenca proprietaria.'),
       StringStruct('FileDescription', 'RPA Download - automatizador de downloads'),
       StringStruct('FileVersion', '{version}'),
       StringStruct('InternalName', 'RPA Download'),

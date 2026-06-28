@@ -4,6 +4,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.6.3] - 2026-06-28
+
+### Adicionado
+
+- **Licença proprietária** (`LICENSE`): todos os direitos reservados — sem
+  concessão de uso, cópia, modificação, redistribuição ou engenharia reversa sem
+  autorização prévia e por escrito do titular.
+- Aviso de copyright (`LegalCopyright`) embutido nos metadados do `.exe` e seção
+  **Licença** no README.
+
 ## [1.6.2] - 2026-06-28
 
 ### Alterado
