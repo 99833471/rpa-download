@@ -82,6 +82,15 @@ def run_gui() -> int:
     mirror.reconcile()
     set_folder_icon(data_root, icon_path())  # ícone na pasta de dados (Windows)
 
+    # Atalhos (Documentos + Menu Iniciar / pesquisável) — só no executável.
+    # RPA_NO_SHORTCUTS desliga (usado na validação, p/ não criar atalho de teste).
+    if getattr(sys, "frozen", False) and not os.environ.get("RPA_NO_SHORTCUTS"):
+        try:
+            from app.shortcuts import ensure_shortcuts
+            ensure_shortcuts(sys.executable, config)
+        except Exception:
+            pass
+
     retry_worker = RetryWorker(config.db_path(data_root), data_root)
     retry_worker.start()
     app.aboutToQuit.connect(retry_worker.stop)

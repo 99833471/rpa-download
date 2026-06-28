@@ -75,6 +75,7 @@ def test_gui_boot(work):
     env = dict(os.environ)
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["RPA_CONFIG_DIR"] = cfg_dir
+    env["RPA_NO_SHORTCUTS"] = "1"  # não criar atalhos reais durante a validação
     proc = subprocess.Popen([EXE], env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     # onefile descomprime a cada início; dá mais tempo quando necessário.

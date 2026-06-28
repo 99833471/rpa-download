@@ -4,6 +4,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.6.1] - 2026-06-25
+
+### Adicionado
+
+- **Atalhos do Windows**: na primeira execução o programa cria um atalho na pasta
+  **Documentos** e um no **Menu Iniciar** — este último torna o app
+  **pesquisável** no Windows (digite "RPA Download" no menu Iniciar). O atalho do
+  Menu Iniciar é recriado se faltar; o de Documentos respeita exclusão posterior.
+
 ## [1.6.0] - 2026-06-25
 
 ### Corrigido (gravação de cliques)
