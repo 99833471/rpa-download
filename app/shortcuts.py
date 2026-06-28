@@ -44,6 +44,9 @@ def _create_shortcut(lnk_path: str, target: str, workdir: str,
 
 def documents_dir() -> str | None:
     """Pasta Documentos do usuário (respeita redirecionamento p/ OneDrive)."""
+    override = os.environ.get("RPA_DOCUMENTS_DIR")  # usado em testes (hermético)
+    if override:
+        return override
     try:
         import winreg
         with winreg.OpenKey(
