@@ -4,6 +4,28 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.7.1] - 2026-06-28
+
+### Corrigido (auto-atualizador travando)
+
+- A atualização chegava a 100%, o app fechava e abria um **CMD vazio que travava**
+  (e nada acontecia). Causa: o script de troca esperava o app fechar **pelo nome
+  do processo** (`RPA Download.exe`); com a auto-instalação da 1.7.0 podia haver
+  **mais de uma** instância, então a espera nunca terminava. Agora a troca:
+  - espera **pelo PID** desta instância (não pelo nome) — com teto de tempo;
+  - roda **oculta** via PowerShell (`-WindowStyle Hidden`), sem janela de console;
+  - **copia com novas tentativas** (em vez de mover) para não perder o download.
+- ⚠️ Como o atualizador antigo está embutido nas versões já instaladas, **baixe a
+  1.7.1 manualmente uma vez**; a partir dela o botão **"🔄 Atualizar"** volta a
+  funcionar sozinho.
+
+### Alterado (telas em tela cheia)
+
+- A **janela principal** abre **maximizada**.
+- A **janela de valores** (preenchimento na hora de executar) abre **maximizada**.
+- O **navegador de execução** já abria maximizado (`--start-maximized` +
+  `no_viewport`).
+
 ## [1.7.0] - 2026-06-28
 
 ### Alterado (instalação como app profissional)

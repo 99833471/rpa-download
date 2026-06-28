@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QLabel,
     QLineEdit,
+    QVBoxLayout,
 )
 
 from .. import formula
@@ -41,22 +42,30 @@ class ManualInputDialog(QDialog):
         self._fields = fields
         self._widgets = {}
 
-        form = QFormLayout(self)
+        outer = QVBoxLayout(self)
+
         intro = QLabel("Preencha os campos abaixo para esta execução:")
         intro.setObjectName("AppSubtitle")
-        form.addRow(intro)
+        outer.addWidget(intro)
 
+        form = QFormLayout()
+        form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         for f in fields:
             label = f.get("name") or f.get("prompt") or "Valor"
             w = self._make_widget(f)
             self._widgets[f["index"]] = (w, f)
             form.addRow(label + ":", w)
+        outer.addLayout(form)
+
+        outer.addStretch(1)  # empurra os botões p/ baixo quando maximizado
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText("Executar")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
-        form.addRow(buttons)
+        outer.addWidget(buttons)
+
+        self.setWindowState(self.windowState() | Qt.WindowMaximized)  # abre em tela cheia
 
     def _make_widget(self, f):
         dt = f.get("data_type", "text")

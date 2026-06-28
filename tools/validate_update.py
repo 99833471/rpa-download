@@ -23,7 +23,7 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import updater  # noqa: E402
-from app.ui.update_controller import build_update_bat  # noqa: E402
+from app.ui.update_controller import build_update_script  # noqa: E402
 
 _failures = []
 
@@ -83,28 +83,31 @@ def test_asset(new):
 
 
 def test_replace_mechanism():
-    print("== Troca do .exe (sandbox isolado) ==")
+    print("== Troca do .exe (sandbox isolado, espera por PID) ==")
+    import filecmp
     ping = shutil.which("ping") or r"C:\Windows\System32\ping.exe"
+    other = shutil.which("hostname") or r"C:\Windows\System32\hostname.exe"
     sandbox = tempfile.mkdtemp(prefix="rpa_upd_")
     target = os.path.join(sandbox, "target.exe")   # 'app instalado'
-    newexe = os.path.join(sandbox, "new.exe")       # 'atualização baixada'
+    newexe = os.path.join(sandbox, "new.exe")       # 'atualização baixada' (binário diferente)
     shutil.copyfile(ping, target)
-    shutil.copyfile(ping, newexe)
+    shutil.copyfile(other, newexe)
+    orig_size = os.path.getsize(target)
 
-    # processo 'rodando' com o mesmo nome do alvo (target.exe)
+    # processo 'rodando' a partir do alvo; o script deve esperar ESTE PID fechar.
     blocker = subprocess.Popen([target, "-n", "600", "127.0.0.1"],
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                stdin=subprocess.DEVNULL)
-    bat = os.path.join(sandbox, "upd.bat")
-    with open(bat, "w", encoding="utf-8") as f:
-        f.write(build_update_bat(target, newexe, "target.exe"))
+    script = os.path.join(sandbox, "upd.ps1")
+    with open(script, "w", encoding="utf-8") as f:
+        f.write(build_update_script(blocker.pid, newexe, target, script))
 
-    subprocess.Popen(["cmd", "/c", bat],
+    subprocess.Popen(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                      "-WindowStyle", "Hidden", "-File", script],
                      creationflags=0x08000000 | subprocess.CREATE_NEW_PROCESS_GROUP,  # CREATE_NO_WINDOW
                      close_fds=True)
-    time.sleep(2.0)  # garante o .bat no laço de espera
-    # ainda travado? new.exe deve continuar existindo enquanto o processo vive
-    waiting_ok = os.path.exists(newexe)
+    time.sleep(2.0)  # script deve estar esperando o PID (ainda não trocou)
+    waiting_ok = (os.path.exists(target) and os.path.getsize(target) == orig_size)
     blocker.terminate()
     try:
         blocker.wait(timeout=5)
@@ -112,13 +115,17 @@ def test_replace_mechanism():
         blocker.kill()
 
     deadline = time.time() + 40
-    while time.time() < deadline and (os.path.exists(newexe) or os.path.exists(bat)):
+    replaced = False
+    while time.time() < deadline:
+        if os.path.exists(target) and filecmp.cmp(target, newexe, shallow=False) and not os.path.exists(script):
+            replaced = True
+            break
         time.sleep(0.5)
 
-    check("esperou enquanto o app estava aberto", waiting_ok)
-    check("moveu a atualização sobre o executável (origem consumida)", not os.path.exists(newexe))
+    check("esperou enquanto o app estava aberto (não trocou cedo)", waiting_ok)
+    check("substituiu o executável pelo novo (conteúdo confere)", replaced)
     check("executável final existe", os.path.exists(target))
-    check("o .bat se autoexcluiu", not os.path.exists(bat))
+    check("o script se autoexcluiu", not os.path.exists(script))
 
     try:
         subprocess.run(["taskkill", "/IM", "target.exe", "/F", "/T"],

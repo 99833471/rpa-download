@@ -101,7 +101,7 @@ def run_gui() -> int:
     app.setStyleSheet(build_qss(theme))
 
     window = MainWindow(db, mirror, retry_worker, theme)
-    window.show()
+    window.showMaximized()  # abre ocupando a tela toda
 
     return app.exec()
 

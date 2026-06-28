@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from app import updater  # noqa: E402
-from app.ui.update_controller import build_update_bat  # noqa: E402
+from app.ui.update_controller import build_update_script  # noqa: E402
 
 _failures = []
 
@@ -30,16 +30,17 @@ def main():
     check("antiga não é newer", updater.is_newer("v1.5.0", "1.5.2") is False)
     check("two-digit minor", updater.is_newer("v1.10.0", "1.9.9") is True)
 
-    print("== .bat de troca do executável ==")
+    print("== Script de troca do executável (PowerShell) ==")
     exe = r"C:\App\RPA Download.exe"
     new = r"C:\Temp\new.exe"
-    bat = build_update_bat(exe, new)
-    check("usa ping como pausa (robusto sem console)", "ping -n 2 127.0.0.1" in bat)
-    check("NÃO usa timeout (depende de console)", "timeout " not in bat)
-    check("move o novo sobre o atual", f'move /y "{new}" "{exe}"' in bat)
-    check("reabre o app", f'start "" "{exe}"' in bat)
-    check("autoexclui o .bat", 'del "%~f0"' in bat)
-    check("espera pelo nome do processo", 'IMAGENAME eq RPA Download.exe' in bat)
+    self_ps = r"C:\Temp\rpa_update.ps1"
+    ps = build_update_script(4242, new, exe, self_ps)
+    check("espera por PID (não pelo nome da imagem)", "$procId=4242" in ps and "Get-Process -Id $procId" in ps)
+    check("NÃO espera por IMAGENAME (evita confundir instâncias)", "IMAGENAME" not in ps)
+    check("copia o novo sobre o atual", "Copy-Item" in ps and "$new" in ps and "$target" in ps)
+    check("reabre o app", "Start-Process -FilePath $target" in ps)
+    check("autoexclui o script", "Remove-Item -LiteralPath" in ps and "rpa_update.ps1" in ps)
+    check("alvo e origem citados (com aspas seguras)", "'C:\\App\\RPA Download.exe'" in ps and "'C:\\Temp\\new.exe'" in ps)
 
     print()
     if _failures:

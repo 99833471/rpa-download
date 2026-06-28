@@ -1,7 +1,8 @@
 """Atualizador no app: verifica a release mais recente e troca o .exe.
 
-Funciona no executável (.exe): baixa o novo .exe e usa um .bat que espera o app
-fechar, substitui o arquivo e reabre. Na versão por código, apenas orienta.
+Funciona no executável (.exe): baixa o novo .exe e usa um script PowerShell oculto
+que espera ESTE processo (por PID) fechar, substitui o arquivo e reabre. Na versão
+por código, apenas orienta.
 """
 
 from __future__ import annotations
@@ -18,24 +19,34 @@ from PySide6.QtWidgets import QApplication, QProgressDialog
 from .. import updater
 from . import dialogs
 
-_CREATE_NO_WINDOW = 0x08000000  # console oculto (necessário p/ tasklist/ping no .bat)
+_CREATE_NO_WINDOW = 0x08000000  # processo sem janela de console
+_CREATE_NEW_PROCESS_GROUP = subprocess.CREATE_NEW_PROCESS_GROUP
 
 
-def build_update_bat(exe: str, new_exe: str, image_name: str = "RPA Download.exe") -> str:
-    """Gera o .bat que espera o app fechar, troca o executável e reabre.
+def _ps_quote(s: str) -> str:
+    return "'" + str(s).replace("'", "''") + "'"
 
-    Usa 'ping' como pausa (não depende de entrada de console, ao contrário de
-    'timeout'), para funcionar de forma robusta em processo sem janela.
+
+def build_update_script(pid: int, new_exe: str, target_exe: str, self_path: str = "") -> str:
+    """Gera o script PowerShell que troca o executável e reabre o app.
+
+    Espera **por PID** (este processo) terminar — e não pelo nome da imagem — para
+    não confundir com outras instâncias do app (ex.: a cópia auto-instalada). Roda
+    **oculto** (sem janela). Copia (com novas tentativas) em vez de mover, para não
+    perder o download se o arquivo ainda estiver travado por um instante.
     """
+    self_del = (f"Remove-Item -LiteralPath {_ps_quote(self_path)} -Force -ErrorAction SilentlyContinue\r\n"
+                if self_path else "")
     return (
-        "@echo off\r\n"
-        ":wait\r\n"
-        f'tasklist /FI "IMAGENAME eq {image_name}" 2>nul | find /I "{image_name}" >nul\r\n'
-        "if not errorlevel 1 ( ping -n 2 127.0.0.1 >nul & goto wait )\r\n"
-        "ping -n 2 127.0.0.1 >nul\r\n"
-        f'move /y "{new_exe}" "{exe}" >nul\r\n'
-        f'start "" "{exe}"\r\n'
-        'del "%~f0"\r\n'
+        "$ErrorActionPreference='SilentlyContinue'\r\n"
+        f"$procId={int(pid)}\r\n"
+        f"$new={_ps_quote(new_exe)}\r\n"
+        f"$target={_ps_quote(target_exe)}\r\n"
+        "for($i=0;$i -lt 150;$i++){ if(-not (Get-Process -Id $procId -ErrorAction SilentlyContinue)){break}; Start-Sleep -Milliseconds 400 }\r\n"
+        "Start-Sleep -Milliseconds 500\r\n"
+        "for($j=0;$j -lt 25;$j++){ try{ Copy-Item -LiteralPath $new -Destination $target -Force -ErrorAction Stop; break } catch { Start-Sleep -Milliseconds 400 } }\r\n"
+        "Start-Process -FilePath $target\r\n"
+        + self_del
     )
 
 
@@ -158,14 +169,17 @@ class UpdateController(QObject):
 
     def _apply(self, new_exe):
         exe = sys.executable
-        bat = os.path.join(tempfile.gettempdir(), "rpa_update.bat")
-        content = build_update_bat(exe, new_exe, os.path.basename(exe))
+        script = os.path.join(tempfile.gettempdir(), "rpa_update.ps1")
+        content = build_update_script(os.getpid(), new_exe, exe, script)
         try:
-            with open(bat, "w", encoding="utf-8") as f:
+            with open(script, "w", encoding="utf-8") as f:
                 f.write(content)
-            subprocess.Popen(["cmd", "/c", bat],
-                             creationflags=_CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
-                             close_fds=True)
+            subprocess.Popen(
+                ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                 "-WindowStyle", "Hidden", "-File", script],
+                creationflags=_CREATE_NO_WINDOW | _CREATE_NEW_PROCESS_GROUP,
+                close_fds=True,
+            )
         except Exception as e:  # noqa: BLE001
             dialogs.info(self.parent, "Atualização", f"Não foi possível iniciar a troca:\n{e}")
             return
