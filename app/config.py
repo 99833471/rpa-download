@@ -134,6 +134,20 @@ def set_theme(theme: str) -> None:
     save_config(cfg)
 
 
+def get_log_retention_days() -> int:
+    """Dias para manter os logs de execução (runs/). 0 = nunca apagar."""
+    try:
+        return int(load_config().get("log_retention_days", 30))
+    except (TypeError, ValueError):
+        return 30
+
+
+def set_log_retention_days(days: int) -> None:
+    cfg = load_config()
+    cfg["log_retention_days"] = int(days)
+    save_config(cfg)
+
+
 def get_execution_headed() -> bool:
     """True = navegador visível durante a execução (padrão)."""
     return bool(load_config().get("execution_headed", True))

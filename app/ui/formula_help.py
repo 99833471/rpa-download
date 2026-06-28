@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -41,7 +42,12 @@ class FormulaHelpDialog(QDialog):
         intro.setWordWrap(True)
         root.addWidget(intro)
 
-        table = QTableWidget(len(formula.FORMULAS), 3)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("🔎  Buscar fórmula (ex.: data, mês, arredondar, texto)…")
+        self.search.textChanged.connect(self._filter)
+        root.addWidget(self.search)
+
+        self.table = table = QTableWidget(len(formula.FORMULAS), 3)
         table.setHorizontalHeaderLabels(["Fórmula", "O que faz", "Exemplo"])
         table.verticalHeader().setVisible(False)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -62,6 +68,15 @@ class FormulaHelpDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         root.addWidget(buttons)
+
+    def _filter(self, text: str) -> None:
+        q = text.strip().lower()
+        for i in range(self.table.rowCount()):
+            row_text = " ".join(
+                (self.table.item(i, c).text() if self.table.item(i, c) else "")
+                for c in range(3)
+            ).lower()
+            self.table.setRowHidden(i, q not in row_text)
 
     @staticmethod
     def _copy(text: str) -> None:

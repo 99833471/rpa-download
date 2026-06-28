@@ -10,7 +10,7 @@ Também coleta o questionário de limites do site. Ao confirmar, monta o RobotMa
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -37,6 +37,7 @@ from ..robot_manifest import (
     FieldConfig, RobotManifest, Selector, SiteLimit, Step,
 )
 from .field_config import FieldConfigDialog
+from .formula_editor import FormulaEditorDialog
 from .formula_help import FormulaHelpDialog, formula_completer
 
 _ACTION_LABELS = {
@@ -67,7 +68,8 @@ class RecordingReviewDialog(QDialog):
         self.summary = summary
         self.raw_steps = summary.get("steps", [])
         self.setWindowTitle(title or f"Revisar gravação — {robot_name}")
-        self.resize(1040, 660)
+        self.resize(1120, 700)
+        self.setMinimumSize(820, 480)
 
         root = QVBoxLayout(self)
 
@@ -90,14 +92,20 @@ class RecordingReviewDialog(QDialog):
             ["#", "Ação", "Nome (sugerido, editável)", "O que fazer", "Valor / Fórmula", "⚙"]
         )
         self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        hh = self.table.horizontalHeader()
+        hh.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # #
+        hh.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Ação
+        hh.setSectionResizeMode(2, QHeaderView.Stretch)           # Nome
+        hh.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # O que fazer
+        hh.setSectionResizeMode(4, QHeaderView.Stretch)           # Valor / Fórmula
+        hh.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # ⚙
         root.addWidget(self.table, 1)
 
         self._rows = []
         self._fill_choices = [("(nenhum)", -1)]
         self._build_rows()
 
+        root.addWidget(self._build_download_group())
         root.addWidget(self._build_limits_group())
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -172,8 +180,9 @@ class RecordingReviewDialog(QDialog):
 
         row = {"action": step.get("action"), "name": name, "mode": combo,
                "value": value, "cfg": cfg, "cfg_btn": cfg_btn, "step": step}
-        combo.currentIndexChanged.connect(lambda _i, r=row: self._apply_field_mode(r))
-        cfg_btn.clicked.connect(lambda _c=False, r=row: self._configure(r))
+        # Conectado DEPOIS do setCurrentIndex inicial -> só dispara em mudança do usuário.
+        combo.currentIndexChanged.connect(lambda _i, r=row: self._on_mode_changed(r))
+        cfg_btn.clicked.connect(lambda _c=False, r=row: self._open_field_tool(r))
 
         self.table.setCellWidget(i, 2, name)
         self.table.setCellWidget(i, 3, combo)
@@ -191,15 +200,47 @@ class RecordingReviewDialog(QDialog):
             value.setEnabled(True)
             value.setPlaceholderText("Valor fixo (ex.: 23/06/2026)")
             cfg_btn.setEnabled(False)
+            cfg_btn.setText("⚙")
         elif kind == FIELD_FORMULA:
             value.setEnabled(True)
             value.setPlaceholderText("Fórmula (ex.: WORKDAY(TODAY(); -1))")
             value.setCompleter(formula_completer(value))
-            cfg_btn.setEnabled(False)
+            cfg_btn.setEnabled(True)
+            cfg_btn.setText("ƒ")
+            cfg_btn.setToolTip("Abrir editor de fórmula (com prévia do resultado)")
         else:  # manual
             value.setEnabled(False)
             value.setPlaceholderText("(perguntado ao rodar)")
             cfg_btn.setEnabled(True)
+            cfg_btn.setText("⚙")
+            cfg_btn.setToolTip("Configurar tipo de dado (campos Manual)")
+
+    def _on_mode_changed(self, row):
+        """Disparado quando o USUÁRIO troca o tipo: abre a tela do tipo escolhido.
+
+        A abertura é adiada (singleShot) para sair do caminho síncrono da mudança
+        do combo — abre logo após selecionar, no app real.
+        """
+        self._apply_field_mode(row)
+        kind = row["mode"].currentData()
+        if kind == FIELD_MANUAL:
+            QTimer.singleShot(0, lambda: self._configure(row))
+        elif kind == FIELD_FORMULA:
+            QTimer.singleShot(0, lambda: self._edit_formula(row))
+
+    def _open_field_tool(self, row):
+        """Botão ⚙/ƒ: abre config (Manual) ou editor (Fórmula) conforme o tipo."""
+        kind = row["mode"].currentData()
+        if kind == FIELD_MANUAL:
+            self._configure(row)
+        elif kind == FIELD_FORMULA:
+            self._edit_formula(row)
+
+    def _edit_formula(self, row):
+        fmt = (row["cfg"] or {}).get("fmt", "dd/mm/yyyy")
+        dlg = FormulaEditorDialog(row["value"].text(), fmt, self)
+        if dlg.exec() == QDialog.Accepted:
+            row["value"].setText(dlg.result())
 
     def _configure(self, row):
         seed = dict(row["cfg"])
@@ -210,6 +251,19 @@ class RecordingReviewDialog(QDialog):
             row["cfg"] = dlg.result_config()
             if row["cfg"]["name"]:
                 row["name"].setText(row["cfg"]["name"])
+
+    def _build_download_group(self) -> QGroupBox:
+        group = QGroupBox("Downloads")
+        form = QFormLayout(group)
+        self.download_mode = QComboBox()
+        self.download_mode.addItem("Acumular (mantém todos, com data/hora no nome)", "accumulate")
+        self.download_mode.addItem("Sobrescrever (mantém só o mais recente)", "overwrite")
+        cur = (self.summary.get("download_mode") or "accumulate")
+        idx = self.download_mode.findData(cur)
+        if idx >= 0:
+            self.download_mode.setCurrentIndex(idx)
+        form.addRow("A cada execução:", self.download_mode)
+        return group
 
     def _build_limits_group(self) -> QGroupBox:
         group = QGroupBox("Limites do site")
@@ -319,6 +373,7 @@ class RecordingReviewDialog(QDialog):
             start_url=self.summary.get("start_url", ""),
             has_login=bool(self.summary.get("has_login")),
             session_file=session_file,
+            download_mode=self.download_mode.currentData(),
             site_limit=site_limit,
             steps=steps,
         )

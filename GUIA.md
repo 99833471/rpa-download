@@ -71,22 +71,38 @@ Depois de gravar, abre a tela de **revisão**, listando cada passo. Para cada um
     aparecem; se não estiver na tela, o passo é **pulado sem erro**.
 - Para campos preenchidos, escolha o **tipo de valor**:
   - **Fixo** — repete exatamente o que você digitou.
-  - **Fórmula** — calcula o valor na hora (ex.: data de hoje). Veja a seção 5.
-  - **Manual** — o programa **pergunta o valor** toda vez que o robô roda.
+  - **Fórmula** — calcula o valor na hora (ex.: data de hoje). Ao escolher, abre o
+    **editor de fórmula** (com prévia do resultado). Veja a seção 5.
+  - **Manual** — o programa **pergunta o valor** toda vez que o robô roda. Ao
+    escolher, abre a **configuração** do campo (tipo de dado). Reabra pelo botão
+    **⚙ / ƒ** ao lado do valor.
+- **Downloads**: defina se a cada execução o robô deve **Acumular** (mantém todos,
+  com data/hora no nome) ou **Sobrescrever** (mantém só o mais recente).
 
 Também há o **questionário de limites do site** (seção 7).
 
 ---
 
-## 5. Fórmulas (valores que mudam, como datas)
+## 5. Fórmulas (valores que mudam, como datas e cálculos)
 
-No campo de fórmula, clique em **ƒ Fórmulas disponíveis** para ver a lista, e use o
-**autocomplete** ao digitar. Exemplos úteis:
+O **editor de fórmula** mostra o **resultado ao vivo** conforme você digita (verde =
+ok; vermelho = erro) e tem uma **lista de funções pesquisável** (duplo-clique
+insere o exemplo). O botão **ƒ Fórmulas disponíveis** também lista tudo, com busca.
 
-- `TODAY()` — data de hoje.
-- `WORKDAY(TODAY(); -1)` — último **dia útil** (considera feriados nacionais BR).
-- `EOMONTH(TODAY(); -1)` — último dia do **mês anterior**.
-- `TEXT(TODAY(); "dd/mm/yyyy")` — formata uma data como texto.
+As fórmulas podem ser **combinadas** e usar **aritmética**: `TODAY()+1`,
+`WORKDAY(TODAY(); -1)`, `(2+3)*4`, `ROUND(10/3; 2)`.
+
+Categorias disponíveis:
+- **Datas**: `TODAY`, `NOW`, `DATE`, `WORKDAY`, `WORKDAYS`, `EOMONTH`, `SOMONTH`,
+  `EDATE`, `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `WEEKNUM`, `QUARTER`, `HOUR/MINUTE/SECOND`.
+- **Números**: `ROUND`, `ROUNDUP/DOWN`, `INT`, `TRUNC`, `ABS`, `MOD`, `POWER`,
+  `SQRT`, `CEILING`, `FLOOR`, `MIN`, `MAX`, `SUM`, `AVERAGE` (e `+ - * /`).
+- **Texto**: `CONCAT`, `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `MID`, `LEN`,
+  `ZEROPAD` (zeros à esquerda, ex.: `6` → `06`), `SUBSTITUTE`, `VALUE`.
+- **Lógica**: `IF(cond; a; b)`, `AND`, `OR`, `NOT` e comparações `= <> < > <= >=`.
+
+Formato de saída com **TEXT**: datas (`TEXT(TODAY(); "yyyy-mm-dd")`) e números, com
+**vírgula** decimal para sites BR (`TEXT(1234.5; "#.##0,00")` → `1.234,50`).
 
 As fórmulas são calculadas com segurança (sem executar código arbitrário).
 
@@ -126,8 +142,8 @@ baixa o `.zip`, **troca a pasta inteira** sozinho (esperando ele fechar) e reabr
 
 ## 9. Aparência e dicas
 
-- **Tema**: alterne entre **claro** (azul/branco) e **escuro** (preto/dourado) no
-  botão de tema, no topo.
+- **Tema**: alterne entre **claro** e **escuro** no botão **Modo claro / Modo
+  escuro**, no topo.
 - **Janelas em tela cheia**: a janela principal, o navegador de execução e a
   janela de valores abrem **maximizados**.
 - **Antivírus/SmartScreen**: como o programa não é assinado digitalmente, pode

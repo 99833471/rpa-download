@@ -76,6 +76,7 @@ class ExecutionController(QObject):
 
         runs_dir = os.path.join(robot_dir, "runs")
         os.makedirs(runs_dir, exist_ok=True)
+        self._purge_old_logs(runs_dir)
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         log_path = os.path.join(runs_dir, f"run_{ts}.log")
         session_path = os.path.join(robot_dir, "session.bin")
@@ -214,5 +215,28 @@ class ExecutionController(QObject):
         try:
             if os.path.isfile(ctx["tmp"]):
                 os.remove(ctx["tmp"])
+        except OSError:
+            pass
+
+    @staticmethod
+    def _purge_old_logs(runs_dir: str) -> None:
+        """Apaga logs/CSV de execução mais antigos que o limite de retenção."""
+        import time
+
+        from .. import config
+        days = config.get_log_retention_days()
+        if days <= 0:  # 0 = nunca apagar
+            return
+        cutoff = time.time() - days * 86400
+        try:
+            for fn in os.listdir(runs_dir):
+                if not (fn.lower().endswith(".log") or fn.lower().endswith(".csv")):
+                    continue
+                p = os.path.join(runs_dir, fn)
+                try:
+                    if os.path.isfile(p) and os.path.getmtime(p) < cutoff:
+                        os.remove(p)
+                except OSError:
+                    pass
         except OSError:
             pass

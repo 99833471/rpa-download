@@ -4,6 +4,39 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.9.0] - 2026-06-28
+
+### Fórmulas (muito ampliadas)
+
+- **Editor de fórmula** com **prévia do resultado ao vivo** (verde = ok / vermelho =
+  erro) e **lista de funções pesquisável** (duplo-clique insere o exemplo). O botão
+  **ƒ Fórmulas disponíveis** também ganhou **busca**.
+- **Combinar fórmulas e aritmética** (já no motor): `TODAY()+1`, `(2+3)*4`,
+  `ROUND(10/3; 2)`.
+- Novas funções: **Números** (ROUND, ROUNDUP/DOWN, INT, TRUNC, ABS, MOD, POWER,
+  SQRT, CEILING, FLOOR, MIN, MAX, SUM, AVERAGE); **Texto** (CONCAT, UPPER, LOWER,
+  TRIM, LEFT, RIGHT, MID, LEN, ZEROPAD, SUBSTITUTE, VALUE); **Lógica** (IF, AND, OR,
+  NOT e comparações `= <> < > <= >=`); **Datas** (WORKDAYS, SOMONTH, WEEKDAY,
+  WEEKNUM, QUARTER, HOUR/MINUTE/SECOND).
+- **Formato decimal** no `TEXT` (vírgula BR): `TEXT(1234.5; "#.##0,00")` → `1.234,50`.
+
+### Revisão / telas
+
+- Ao escolher o **tipo de campo**, abre a tela correspondente: **Manual** → config do
+  campo; **Fórmula** → editor de fórmula.
+- Nova opção de **download por robô**: **Acumular** (padrão) ou **Sobrescrever**.
+- **Tela de revisão** e **tela de valores** não abrem mais maximizadas; larguras
+  ajustadas para não cortar textos.
+
+### Execução / uso
+
+- **Duplo clique** num robô agora o **executa**.
+- **Clique em itens de menu** mais robusto: rola até o elemento e passa o mouse
+  (hover) antes de clicar — ajuda em submenus que abrem no hover.
+- **Retenção de logs**: execuções com mais de **30 dias** (configurável) são apagadas
+  automaticamente da pasta `runs/`.
+- Botão de tema agora mostra apenas **"Modo claro" / "Modo escuro"**.
+
 ## [1.8.1] - 2026-06-28
 
 ### Adicionado (tela de Guia)

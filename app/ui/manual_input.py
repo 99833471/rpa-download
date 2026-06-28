@@ -12,7 +12,7 @@ Cada campo aparece com o widget adequado ao seu tipo de dado:
 
 from __future__ import annotations
 
-from PySide6.QtCore import QDate, QDateTime, Qt
+from PySide6.QtCore import QDate, QDateTime
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import (
     QComboBox,
@@ -38,7 +38,7 @@ class ManualInputDialog(QDialog):
     def __init__(self, fields: list[dict], robot_name: str, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Informações para “{robot_name}”")
-        self.setMinimumWidth(420)
+        self.setMinimumWidth(480)
         self._fields = fields
         self._widgets = {}
 
@@ -46,6 +46,7 @@ class ManualInputDialog(QDialog):
 
         intro = QLabel("Preencha os campos abaixo para esta execução:")
         intro.setObjectName("AppSubtitle")
+        intro.setWordWrap(True)
         outer.addWidget(intro)
 
         form = QFormLayout()
@@ -57,15 +58,13 @@ class ManualInputDialog(QDialog):
             form.addRow(label + ":", w)
         outer.addLayout(form)
 
-        outer.addStretch(1)  # empurra os botões p/ baixo quando maximizado
-
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText("Executar")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         outer.addWidget(buttons)
-
-        self.setWindowState(self.windowState() | Qt.WindowMaximized)  # abre em tela cheia
+        # Tamanho confortável que se ajusta ao conteúdo (sem tela cheia).
+        self.adjustSize()
 
     def _make_widget(self, f):
         dt = f.get("data_type", "text")

@@ -61,6 +61,14 @@ class RobotList(QListWidget):
         # para o nome completo aparecer quebrando em linhas.
         self.setIconSize(QSize(ICON_SIZES["small"], ICON_SIZES["small"]))
 
+        # Duplo-clique num robô executa-o.
+        self.itemDoubleClicked.connect(self._on_double_click)
+
+    def _on_double_click(self, item) -> None:
+        rid = item.data(ROBOT_ID_ROLE)
+        if rid is not None:
+            self.executeRequested.emit(rid)
+
     def _ensure_icon_size(self, size_key: str) -> None:
         want = ICON_SIZES.get(size_key, ICON_SIZES["small"])
         if want > self.iconSize().width():

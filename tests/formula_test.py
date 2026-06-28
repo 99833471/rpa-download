@@ -69,6 +69,58 @@ def test_formula():
     check("valida fórmula correta", ok3)
 
 
+def test_formula_extras():
+    print("== Fórmulas: números, texto, lógica, datas extras ==")
+    ref = date(2026, 6, 24)  # quarta-feira
+
+    # Combinar / aritmética
+    check("aritmética com precedência", formula.evaluate_raw("2+3*4") == 14)
+    check("parênteses", formula.evaluate_raw("(2+3)*4") == 20)
+    check("divisão decimal", abs(formula.evaluate_raw("10/4") - 2.5) < 1e-9)
+
+    # Números
+    check("ROUND", formula.evaluate_raw("ROUND(10/3; 2)") == round(10 / 3, 2))
+    check("ABS", formula.evaluate_raw("ABS(-7)") == 7)
+    check("MOD", formula.evaluate_raw("MOD(10; 3)") == 1)
+    check("MAX", formula.evaluate_raw("MAX(3; 7; 2)") == 7)
+    check("SUM", formula.evaluate_raw("SUM(1; 2; 3; 4)") == 10)
+    check("POWER", formula.evaluate_raw("POWER(2; 10)") == 1024)
+    check("INT", formula.evaluate_raw("INT(9.9)") == 9)
+
+    # Texto
+    check("CONCAT", formula.evaluate('CONCAT("REL-"; YEAR(TODAY()))', today=ref) == "REL-2026")
+    check("ZEROPAD", formula.evaluate("ZEROPAD(MONTH(TODAY()); 2)", today=ref) == "06")
+    check("UPPER", formula.evaluate('UPPER("abc")') == "ABC")
+    check("LEFT", formula.evaluate('LEFT("Relatorio"; 3)') == "Rel")
+    check("VALUE vírgula", abs(formula.evaluate_raw('VALUE("12,5")') - 12.5) < 1e-9)
+
+    # Datas extras
+    check("SOMONTH", formula.evaluate("SOMONTH(TODAY())", today=ref) == "01/06/2026")
+    check("WEEKDAY (quarta=3)", formula.evaluate_raw("WEEKDAY(TODAY())", today=ref) == 3)
+    check("QUARTER", formula.evaluate_raw("QUARTER(TODAY())", today=ref) == 2)
+    check("WORKDAYS jun (1 a 5)",
+          formula.evaluate_raw("WORKDAYS(DATE(2026;6;1); DATE(2026;6;5))") == 5)
+
+    # Lógica + comparações
+    check("comparação >", formula.evaluate_raw("3 > 2") is True)
+    check("IF verdadeiro", formula.evaluate('IF(DAY(TODAY()) > 15; "depois"; "antes")', today=ref) == "depois")
+    check("AND", formula.evaluate_raw("AND(1=1; 2>1)") is True)
+    check("OR/NOT", formula.evaluate_raw("OR(NOT(1=1); 2>1)") is True)
+
+    # Formato decimal (vírgula BR)
+    check("TEXT decimal vírgula", formula.evaluate('TEXT(1234.5; "0,00")') == "1234,50")
+    check("TEXT milhar BR", formula.evaluate('TEXT(1234.5; "#.##0,00")') == "1.234,50")
+
+    # Preview
+    ok, val = formula.preview("TODAY()")
+    check("preview ok", ok and "/" in val)
+    bad_ok, _ = formula.preview("EVIL(")
+    check("preview erro", not bad_ok)
+
+    # Combinação de datas + número (Today()+1)
+    check("combinar Today()+1", formula.evaluate("TODAY()+1", today=ref) == "25/06/2026")
+
+
 def test_manifest():
     print("== Manifesto robot.json ==")
     m = RobotManifest(
@@ -115,6 +167,7 @@ def test_crypto():
 
 def main():
     test_formula()
+    test_formula_extras()
     test_manifest()
     test_crypto()
     print()

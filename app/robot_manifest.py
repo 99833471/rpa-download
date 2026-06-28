@@ -131,6 +131,7 @@ class RobotManifest:
     start_url: str = ""
     has_login: bool = False
     session_file: str = ""            # nome do arquivo de sessão criptografada
+    download_mode: str = "accumulate"  # accumulate (data/hora no nome) | overwrite
     site_limit: SiteLimit = field(default_factory=SiteLimit)
     steps: list[Step] = field(default_factory=list)
 
@@ -147,6 +148,7 @@ class RobotManifest:
             start_url=d.get("start_url", ""),
             has_login=d.get("has_login", False),
             session_file=d.get("session_file", ""),
+            download_mode=d.get("download_mode", "accumulate"),
             site_limit=SiteLimit.from_dict(d.get("site_limit")),
             steps=[Step.from_dict(s) for s in d.get("steps", [])],
         )

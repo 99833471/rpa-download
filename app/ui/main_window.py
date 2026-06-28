@@ -116,9 +116,9 @@ class MainWindow(QMainWindow):
 
     def _update_theme_button(self) -> None:
         if self.theme_name == "dark":
-            self.theme_btn.setText("☀  Tema claro (azul/branco)")
+            self.theme_btn.setText("☀  Modo claro")
         else:
-            self.theme_btn.setText("🌙  Tema escuro (preto/dourado)")
+            self.theme_btn.setText("🌙  Modo escuro")
 
     def toggle_theme(self) -> None:
         self.theme_name = "light" if self.theme_name == "dark" else "dark"

@@ -223,10 +223,15 @@ class ExecutionEngine:
                 self.page.wait_for_timeout(800)
             except (PWError, PWTimeout):
                 pass
+        overwrite = getattr(self.manifest, "download_mode", "accumulate") == "overwrite"
         saved = []
         for dl in self._downloads_captured:
             try:
-                name = timestamp_filename(dl.suggested_filename or "download")
+                name = dl.suggested_filename or "download"
+                # Sobrescrever: mantém o nome original (a próxima execução substitui).
+                # Acumular: prefixa data/hora para preservar o histórico.
+                if not overwrite:
+                    name = timestamp_filename(name)
                 dest = os.path.join(self.download_dir, name)
                 dl.save_as(dest)
                 if os.path.exists(dest) and os.path.getsize(dest) > 0:
@@ -364,7 +369,20 @@ class ExecutionEngine:
         )
 
     def _click(self, step):
-        self._over_selectors(step, lambda l: l.first.click(timeout=self.action_timeout), "clique")
+        def do(loc):
+            el = loc.first
+            # Ajuda em menus/itens que só ficam acessíveis ao rolar/passar o mouse
+            # (ex.: submenu lateral que abre no hover do item pai).
+            try:
+                el.scroll_into_view_if_needed(timeout=min(self.action_timeout, 2500))
+            except (PWError, PWTimeout):
+                pass
+            try:
+                el.hover(timeout=min(self.action_timeout, 2000))
+            except (PWError, PWTimeout):
+                pass
+            el.click(timeout=self.action_timeout)
+        self._over_selectors(step, do, "clique")
 
     def _fill(self, step, value):
         def do(loc):
