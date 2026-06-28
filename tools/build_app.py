@@ -19,6 +19,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_NAME = "RPA Download"
 ICON = os.path.join(ROOT, "app", "assets", "icon.ico")
+GUIA_MD = os.path.join(ROOT, "GUIA.md")
 
 # Saída do build. Pode ser redirecionada para FORA do OneDrive (que costuma
 # travar arquivos durante o build) via as variáveis RPA_DIST / RPA_WORK.
@@ -107,6 +108,7 @@ def _common_args(recorder_js):
         "--collect-all", "holidays",
         "--add-data", f"{recorder_js}{os.pathsep}app/recorder",
         "--add-data", f"{ICON}{os.pathsep}app/assets",
+        "--add-data", f"{GUIA_MD}{os.pathsep}.",
     ]
 
 

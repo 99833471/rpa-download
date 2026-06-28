@@ -7,6 +7,9 @@ interface visual cuja estrutura é **espelhada em pastas físicas no Windows**.
 > Status atual: **todas as fases concluídas** — 1 (Fundação), 2 (Gravação),
 > 3 (Execução), 4 (Limites adaptativos) e 5 (Exportação `.exe`).
 
+> 📖 **Novo por aqui?** Veja o **[Guia passo a passo (GUIA.md)](GUIA.md)** — o mesmo
+> guia também abre dentro do programa pelo botão **📖 Guia**.
+
 ---
 
 ## ⬇️ Usar o programa pronto (sem instalar Python)

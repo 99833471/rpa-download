@@ -4,6 +4,16 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.8.1] - 2026-06-28
+
+### Adicionado (tela de Guia)
+
+- Novo botão **📖 Guia** na barra superior abre um **passo a passo** de como usar o
+  programa (instalar, gravar, revisar, executar, fórmulas, atualizar, etc.).
+- O guia tem **fonte única** (`GUIA.md`): o mesmo arquivo é **renderizado no app**
+  e fica visível **no GitHub** (linkado no README). Assim, basta editar um arquivo
+  para atualizar os dois lugares conforme o programa evolui.
+
 ## [1.8.0] - 2026-06-28
 
 ### Alterado (distribuição em .zip / modo pasta)

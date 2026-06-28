@@ -92,6 +92,11 @@ class MainWindow(QMainWindow):
         self.headed_check.toggled.connect(config.set_execution_headed)
         layout.addWidget(self.headed_check)
 
+        self.guide_btn = QPushButton("📖  Guia")
+        self.guide_btn.setToolTip("Abrir o guia passo a passo de como usar")
+        self.guide_btn.clicked.connect(self.open_guide)
+        layout.addWidget(self.guide_btn)
+
         self.update_btn = QPushButton("🔄  Atualizar")
         self.update_btn.setToolTip("Verificar e instalar a versão mais recente")
         self.update_btn.clicked.connect(self.updater.check_and_prompt)
@@ -104,6 +109,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.theme_btn)
 
         return bar
+
+    def open_guide(self) -> None:
+        from .guide import GuideDialog
+        GuideDialog(self).exec()
 
     def _update_theme_button(self) -> None:
         if self.theme_name == "dark":
