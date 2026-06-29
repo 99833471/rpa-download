@@ -4,6 +4,23 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue, de forma simplificada, o [Keep a Changelog](https://keepachangelog.com/pt-BR/)
 e o versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.9.2] - 2026-06-29
+
+### Corrigido (login SSO sendo repetido)
+
+- O robô falhava ao tentar **repetir o clique de login** (ex.: "SSO Ambev") quando a
+  sessão já estava válida (já logado) — o botão não existia mais → timeout →
+  `TargetClosedError`.
+- **Reconhecimento de SSO ampliado**: além de Microsoft/Okta/ADFS, agora também
+  **Keycloak/OpenID Connect** (`/realms/…/protocol/openid-connect/…`) e a **página
+  de escolha de provedor** (realm chooser). O **gravador** deixa de gravar essas
+  páginas e o **executor** as trata como login (sessão + login manual).
+- **Rede de segurança**: se um clique que parece de login (ex.: "SSO …") falhar e a
+  página **não** for de login (ou seja, já logado), o passo é **pulado** em vez de
+  derrubar a execução.
+
+> Recomendado **regravar** robôs de SSO uma vez, para o login sair dos passos.
+
 ## [1.9.1] - 2026-06-28
 
 ### Home, Lixeira e execução

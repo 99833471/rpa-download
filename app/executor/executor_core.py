@@ -40,6 +40,14 @@ _CLOSE_SELECTORS = [
     ".cookie-accept", ".cc-allow", ".cc-dismiss",
 ]
 
+# Pistas de que um clique gravado é parte do LOGIN (ex.: escolher provedor SSO).
+# Usadas só para PULAR um passo desses que falhou quando já estamos logados
+# (sessão válida → o botão de login nem existe mais).
+_LOGIN_STEP_HINTS = (
+    "sso", "single sign", "sign in", "signin", "log in", "entrar com",
+    "acessar com", "realm", "keycloak", "entrar com sso",
+)
+
 # Detecta um carimbo de data/hora já presente no nome do arquivo.
 _TIMESTAMP_RE = re.compile(
     r"(19|20)\d{2}[-_.]?\d{2}[-_.]?\d{2}([-_. ]?\d{2}[-_.:]?\d{2})?|\d{8}|\d{10,}"
@@ -187,6 +195,15 @@ class ExecutionEngine:
                     self._record(rec_index, step, "pulado", "opcional: " + str(e), overrides)
                     i += 1
                     continue
+                # Rede de segurança p/ login: se um clique de login (ex.: "SSO …")
+                # falha e NÃO estamos numa página de login, é porque a sessão já
+                # está ativa (já logado) — pula o passo em vez de falhar.
+                if (step.action == "click" and self._looks_like_login_step(step)
+                        and not self._page_is_login()):
+                    self.log(f"Passo {rec_index}: parece login e já há sessão ativa — pulado")
+                    self._record(rec_index, step, "pulado", "login já ativo (sessão)", overrides)
+                    i += 1
+                    continue
                 self._record(rec_index, step, "erro", str(e), overrides)
                 self.log(f"ERRO no passo {rec_index}: {e}")
                 return RunResult(False, str(e), downloads)
@@ -268,6 +285,19 @@ class ExecutionEngine:
             return is_auth_url(self.page.url or "")
         except Exception:
             return False
+
+    def _page_is_login(self) -> bool:
+        try:
+            return is_login_page(self.page)
+        except Exception:
+            return False
+
+    @staticmethod
+    def _looks_like_login_step(step) -> bool:
+        parts = [step.name or "", step.label or "", step.value or ""]
+        parts += [s.value for s in (step.selectors or []) if s.type == "text"]
+        blob = " ".join(parts).lower()
+        return any(h in blob for h in _LOGIN_STEP_HINTS)
 
     # ------------------------------------------------------- particionamento
     def _valid_date_steps(self, lim) -> bool:

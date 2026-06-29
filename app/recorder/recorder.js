@@ -38,12 +38,14 @@
     "login.microsoftonline.com", "login.microsoft.com", "login.live.com",
     "login.windows.net", "msauth", "sts.", "adfs", ".okta.com", "okta.com",
     "onelogin.com", "pingidentity", "auth0.com", "accounts.google.com",
-    "signin.aws", "fs.",
+    "signin.aws", "fs.", "keycloak",
   ];
   // Caminhos ESPECÍFICOS (sem trechos genéricos como /login,/sso,/signin, que
   // podem existir em rotas legítimas do app e fariam o gravador ignorar cliques).
+  // Inclui Keycloak/OpenID Connect e a página de escolha de provedor (realm chooser).
   const AUTH_PATHS = ["/saml2", "/adfs/ls", "/oauth2/authorize", "/oauth2/v2.0/authorize",
-                      "/openid/connect/authorize"];
+                      "/openid/connect/authorize", "/protocol/openid-connect/",
+                      "/realms/", "/multiple-realms"];
   function onAuthPage() {
     try {
       const h = (location.hostname || "").toLowerCase();

@@ -177,6 +177,27 @@ def test_login_detection(pw, d):
     check("não detecta quando não há senha", no_pwd is False)
 
 
+def test_login_step_skip(pw, d):
+    print("== Pula passo de login quando já há sessão (já logado) ==")
+    url_ok = _url(d, "logged.html", "<div>painel logado</div>")
+    manifest = RobotManifest(name="t", start_url=url_ok, steps=[
+        Step(action="goto", url=url_ok),
+        # Clique de login gravado; na execução já estamos logados -> não existe.
+        Step(action="click", name="SSO Ambev",
+             selectors=[Selector("text", "Entrar com SSO")]),
+    ])
+    browser = pw.chromium.launch(headless=True)
+    page = browser.new_context().new_page()
+    eng = ExecutionEngine(page, manifest, os.path.join(d, "ls"),
+                          action_timeout=600, max_attempts=1, backoff_base=0.02)
+    res = eng.run()
+    browser.close()
+    check("execução OK pulando o login", res.ok)
+    skipped = any(r["status"] == "pulado" and "login" in (r["erro"] or "").lower()
+                  for r in eng.step_results)
+    check("passo de login marcado como pulado", skipped)
+
+
 def main():
     test_naming()
     with tempfile.TemporaryDirectory() as d, sync_playwright() as pw:
@@ -186,6 +207,7 @@ def main():
         test_popup_evasion(pw, d)
         test_selector_fallback(pw, d)
         test_login_detection(pw, d)
+        test_login_step_skip(pw, d)
     print()
     if _failures:
         print(f"RESULTADO: {len(_failures)} falha(s): {_failures}")

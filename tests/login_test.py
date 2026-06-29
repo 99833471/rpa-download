@@ -29,12 +29,15 @@ def main():
         "https://empresa.okta.com/app/x",
         "https://host.com/adfs/ls/",
         "https://site.com/oauth2/authorize?x=1",
+        # Keycloak / OpenID Connect (ex.: SSO Ambev) e a escolha de provedor.
+        "https://auth.ambevdevs.com.br/realms/Ambev/protocol/openid-connect/auth?x=1",
+        "https://empresa.keycloak.cloud/auth/realms/x",
+        "https://wms.exemplo.com.br/wmsnew/multiple-realms",
     ]
     # Detecção ESTRITA: trechos genéricos no caminho (login/sso/signin) NÃO contam
     # como login — senão o gravador/executor pularia ações reais do app.
     notauth = [
         "https://wms.exemplo.com.br/wmsnew#",
-        "https://wms.exemplo.com.br/wmsnew/multiple-realms",
         "https://wms.exemplo.com.br/wmsnew/sso-config",
         "https://app.com/login-page",
         "https://app.com/relatorios/signin-history",

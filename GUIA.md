@@ -53,7 +53,10 @@ menu de ações (renomear, mover, excluir, etc.).
 1. Adicione um robô no bloco desejado e escolha **Aprender / Gravar**.
 2. O **navegador abre** (em tela cheia). **Faça login normalmente**, se o site
    pedir — o login **não** é gravado; ele é salvo de forma **criptografada** e
-   reaproveitado nas próximas execuções.
+   reaproveitado nas próximas execuções. Páginas de **SSO** (Microsoft, Okta,
+   Keycloak — ex.: "SSO Ambev" — e a tela de escolha de provedor) são reconhecidas
+   e tratadas como login. Se em uma execução você **já estiver logado**, o passo de
+   login é **pulado** automaticamente.
 3. **Navegue e faça as ações** que quer automatizar:
    - **Cliques** em botões, links e ícones são gravados.
    - **Preenchimento** de campos (texto, datas) é gravado.
